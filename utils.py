@@ -110,7 +110,7 @@ def get_img_channel_num(file_name):
     """
     img = load_file(file_name)
     if len(img.shape) == 2:
-        channel_num = 2
+        channel_num = 1
     elif len(img.shape) == 3:
         channel_num = img.shape[-1]
     else:
@@ -149,10 +149,31 @@ def pad_image(img, pad):
 
 
 def crop_image(img, y, x, h, w):
+    """
+    Crop the image with given top-left anchor and corresponding width & height
+    :param img: image to be cropped
+    :param y: height of anchor
+    :param x: width of anchor
+    :param h: height of the patch
+    :param w: width of the patch
+    :return:
+    """
     if len(img.shape) == 2:
         return img[y:y+w, x:x+h]
     else:
         return img[y:y+w, x:x+h, :]
+
+
+def make_center_string(char, length, center_str=''):
+    """
+    Make one line decoration string that has center_str at the center and surrounded by char
+    The total length of the string equals to length
+    :param char: character to be repeated
+    :param length: total length of the string
+    :param center_str: string that shown at the center
+    :return:
+    """
+    return center_str.center(length, char)
 
 
 if __name__ == '__main__':
