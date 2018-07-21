@@ -45,7 +45,7 @@ class PatchExtractor(processBlock.BasicProcess):
         self.tile_size = np.array(tile_size, dtype=np.int32)
         self.overlap = overlap
         self.pad = pad
-        pe_name = '{}_w{}h{}_overlap{}_pad{}'.format(name, self.patch_size[0], self.patch_size[1], self.overlap, self.pad)
+        pe_name = '{}_h{}w{}_overlap{}_pad{}'.format(name, self.patch_size[0], self.patch_size[1], self.overlap, self.pad)
         path = utils.get_block_dir('data', [name, ds_name, pe_name])
         super().__init__(pe_name, path, func=self.process)
 

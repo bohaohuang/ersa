@@ -45,12 +45,26 @@ def get_channel_mean(parent_dir, img_files):
     return chan_mean
 
 
-def read_collection(clc_name=None, clc_dir=None):
+def read_collection(clc_name=None, clc_dir=None, raw_data_path=None, field_name=None, field_id=None, rgb_ext=None,
+                    gt_ext=None, file_ext=None, files=None, force_run=False):
     """
-    Read and initialize a collection from a directory
+    Read and initialize a collection from a directory, try to create one if it does not exists
     :param clc_name: name of the collection
     :param clc_dir: directory to the collection
     :return: the collection object, assertion error if no process hasn't completed
+
+    :param raw_data_path: path to where the data are stored
+    :param field_name: could be name of the cities, or other prefix of the images
+    :param field_id: could be id of the tiles, or other suffix of the images
+    :param rgb_ext: name extensions that indicates the images are not ground truth, use ',' to separate if you have
+                    multiple extensions
+    :param gt_ext: name extensions that indicates the images are ground truth, you can only have at most one ground
+                   truth extension
+    :param file_ext: extension of the files, use ',' to separate if you have multiple extensions, if all the files
+                     have the same extension, you only need to specify one
+    :param files: files in the raw_data_path, can be specified by user to exclude some of the raw files, if it is
+                  None, all files will be found automatically
+    :param force_run: force run the collection maker even if it already exists
     """
     if clc_dir is None:
         assert clc_name is not None
@@ -65,7 +79,9 @@ def read_collection(clc_name=None, clc_dir=None):
                              meta_data['files'], meta_data['clc_name'], force_run=False)
         return cm
     else:
-        raise AssertionError('You need to make collection first')
+        # try to create the collection
+        return CollectionMaker(raw_data_path, field_name, field_id, rgb_ext, gt_ext, file_ext, files, clc_name,
+                               force_run)
 
 
 class CollectionMaker(object):
@@ -243,11 +259,23 @@ class CollectionMaker(object):
         :param new_file_ext: new file extension, if it has been changed
         :return:
         """
-        new_file_ext = files[0].split('.')[-1]
+        if new_file_ext is None:
+            try:
+                new_file_ext = files[0].split('.')[-1]
+            except IndexError:
+                print('{} might already exist, skip replacement'.format(field_ext_pair[1]))
+                return
         if is_gt:
+            # do nothing if it already exists
+            if field_ext_pair[1] == self.gt_ext:
+                print('{} already exits!')
+                return
             self.gt_ext = field_ext_pair[1]
             self.file_ext[-1] = new_file_ext
         else:
+            if field_ext_pair[1] in self.rgb_ext:
+                print('{} already exits!')
+                return
             self.rgb_ext = [field_ext_pair[1] if ext == field_ext_pair[0] else ext for ext in self.rgb_ext]
             self.file_ext = [new_file_ext if self.rgb_ext[i] == field_ext_pair[0] else self.file_ext[i]
                              for i in range(len(self.rgb_ext))]
@@ -262,6 +290,9 @@ class CollectionMaker(object):
         :param new_field_ext: new field extension
         :return:
         """
+        if new_field_ext in self.rgb_ext:
+            print('{} already exits!')
+            return
         new_file_ext = files[0].split('.')[-1]
         self.rgb_ext.append(new_field_ext)
         if len(self.gt_ext) == 0:

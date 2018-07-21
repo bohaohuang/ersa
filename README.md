@@ -6,8 +6,13 @@
 - [X] Collection maker
     - [X] Read data files by customized filter
     - [X] Make data collection
+    - [ ] Copy collection
+    - [ ] Get files if already exits
 - [X] Preprocessor
     - [X] Collection editor
     - [X] Patch extractor
-- [ ] DataReader
+- [X] DataReader
+- [ ] Neural Network
+    - [X] model.train
+    - [ ] model.eval
 - [ ] Utils

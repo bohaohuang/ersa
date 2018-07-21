@@ -4,6 +4,6 @@ Must have a dataPath and resPath defined
 
 """
 
-PATH = {'data': r'/media/ei-edl01/user/bh163/ersa_data_temp',
-        'model': None,
+PATH = {'data': r'/hdd/ersa',
+        'model': r'/hdd6/Models',
         'eval': None}

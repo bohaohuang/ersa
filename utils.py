@@ -3,6 +3,7 @@ import time
 import pickle
 import imageio
 import numpy as np
+import matplotlib as plt
 from functools import wraps
 import ersaPath
 
@@ -176,9 +177,20 @@ def make_center_string(char, length, center_str=''):
     return center_str.center(length, char)
 
 
-if __name__ == '__main__':
-    @timer_decorator
-    def process():
-        time.sleep(2)
-        return 'a'
-    a = process()
+def get_default_colors():
+    """
+    Get plt default colors
+    :return: a list of rgb colors
+    """
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    return colors
+
+
+def get_color_list():
+    """
+    Get default color list in plt, convert hex value to rgb tuple
+    :return:
+    """
+    colors = get_default_colors()
+    return [tuple(int(a.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)) for a in colors]

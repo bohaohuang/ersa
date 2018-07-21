@@ -33,7 +33,7 @@ class BasicProcess(object):
         # check if state file exists
         state_exist = os.path.exists(self.state_file)
         # run the function if force run or haven't run before
-        if force_run == 1 or state_exist == 0:
+        if force_run or state_exist == 0:
             print(('Start running {}'.format(self.name)))
             # write state log as incomplete
             with open(self.state_file, 'w') as f:
