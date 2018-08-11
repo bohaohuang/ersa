@@ -244,7 +244,13 @@ class CollectionMaker(object):
         for key, val in self.meta_data.items():
             if key in skip_keys:
                 continue
-            print('{}: {}'.format(key, val))
+            if type(val) is list:
+                if len(val) >= 10:
+                    print('{}: [{}, {}, ..., {}]'.format(key, val[0], val[1], val[-1]))
+                else:
+                    print('{}: {}'.format(key, val))
+            else:
+                print('{}: {}'.format(key, val))
         print('Source file: {}'.format(' '.join(['*{}*.{}'.format(ext1, ext2)
                                                  for ext1, ext2 in zip(self.rgb_ext, self.file_ext)])))
         if len(self.gt_ext) > 0:
