@@ -146,7 +146,7 @@ class CollectionMaker(object):
         :param file_ext: extension of the images
         :return: regex pattern string
         """
-        regexp = r'.*({}).*({}).*{}.*.{}'.format('|'.join(field_name), '|'.join(field_id), field_txt, file_ext)
+        regexp = r'.*({})[\D]*({})[\D]*{}.*.{}'.format('|'.join(field_name), '|'.join(field_id), field_txt, file_ext)
         return regexp
 
     def get_dir(self):
@@ -187,6 +187,7 @@ class CollectionMaker(object):
         file_selection = []
         for field, file in zip(field_ext, file_ext):
             regexp = self.make_regexp(field_name, field_id, field, file)
+            print(regexp)
             file_selection.append(self.get_files(regexp, full_path=True))
         file_selection = utils.rotate_list(file_selection)
         return file_selection
