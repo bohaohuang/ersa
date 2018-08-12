@@ -294,22 +294,26 @@ class SegmentationNetwork(Network):
 
             sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
 
-            for epoch in range(start_epoch, self.epochs):
-                # training
-                sess.run([train_init, self.train_op[True]])
-                global_step = 0
-                for step in range(start_step, self.n_train, self.bs):
-                    sess.run(self.optimizer)
-                    global_step = sess.run(self.global_step)
-                    sess.run(self.train_op[False])
-                    for hook in train_hooks:
-                        hook.run(global_step, sess, summary_writer)
+            try:
+                for epoch in range(start_epoch, self.epochs):
+                    # training
+                    sess.run([train_init, self.train_op[True]])
+                    global_step = 0
+                    for step in range(start_step, self.n_train, self.bs):
+                        sess.run(self.optimizer)
+                        global_step = sess.run(self.global_step)
+                        sess.run(self.train_op[False])
+                        for hook in train_hooks:
+                            hook.run(global_step, sess, summary_writer)
 
-                # validation
-                print('Eval @ Epoch {} '.format(epoch), end='')
-                sess.run([valid_init, self.train_op[False]])
-                for hook in valid_hooks:
-                    hook.run(global_step, sess, summary_writer)
+                    # validation
+                    print('Eval @ Epoch {} '.format(epoch), end='')
+                    sess.run([valid_init, self.train_op[False]])
+                    for hook in valid_hooks:
+                        hook.run(global_step, sess, summary_writer)
+            finally:
+                saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=1)
+                saver.save(sess, '{}/model.ckpt'.format(self.ckdir), global_step=self.global_step)
 
     @staticmethod
     def get_overlap():
