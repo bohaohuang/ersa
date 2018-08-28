@@ -8,7 +8,7 @@ class UNet(basicNetwork.SegmentationNetwork):
     """
     Implements the U-Net from https://arxiv.org/pdf/1505.04597.pdf
     """
-    def __init__(self, class_num, input_size, dropout_rate=None, name='UNet', suffix='', learn_rate=1e-4,
+    def __init__(self, class_num, input_size, dropout_rate=None, name='unet', suffix='', learn_rate=1e-4,
                  decay_step=60, decay_rate=0.1, epochs=100, batch_size=5):
         """
         Initialize the object
@@ -48,16 +48,16 @@ class UNet(basicNetwork.SegmentationNetwork):
                                                 padding='valid', dropout=self.dropout_rate)
 
         # upsample
-        up6 = nn_utils.crop_upsample_concat(conv5, conv4, 8, name='6')
+        up6 = nn_utils.crop_upsample_conv_concat(conv5, conv4, 8, name='6', filter_n=[sfn*8], training=self.mode)
         conv6 = nn_utils.conv_conv_pool(up6, [sfn * 8, sfn * 8], self.mode, name='up6', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
-        up7 = nn_utils.crop_upsample_concat(conv6, conv3, 32, name='7')
+        up7 = nn_utils.crop_upsample_conv_concat(conv6, conv3, 32, name='7', filter_n=[sfn*4], training=self.mode)
         conv7 = nn_utils.conv_conv_pool(up7, [sfn * 4, sfn * 4], self.mode, name='up7', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
-        up8 = nn_utils.crop_upsample_concat(conv7, conv2, 80, name='8')
+        up8 = nn_utils.crop_upsample_conv_concat(conv7, conv2, 80, name='8', filter_n=[sfn*2], training=self.mode)
         conv8 = nn_utils.conv_conv_pool(up8, [sfn * 2, sfn * 2], self.mode, name='up8', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
-        up9 = nn_utils.crop_upsample_concat(conv8, conv1, 176, name='9')
+        up9 = nn_utils.crop_upsample_conv_concat(conv8, conv1, 176, name='9', filter_n=[sfn], training=self.mode)
         conv9 = nn_utils.conv_conv_pool(up9, [sfn, sfn], self.mode, name='up9', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
 
@@ -72,6 +72,21 @@ class UNet(basicNetwork.SegmentationNetwork):
         :return:
         """
         return 184
+
+    @staticmethod
+    def is_valid_patch_size(ps):
+        """
+        Due to the existence of cropping and pooling, U-Net cannot take arbitrary input size
+        This function determines if a input size is a valid input size, other wise return closest valid size
+        :param ps: input patch size, should be a tuple
+        :return: True if ps is valid, otherwise the closest valid input size
+        """
+        if (ps[0] - 124) % 32 == 0 and (ps[1] - 124) % 32 == 0:
+            return True
+        else:
+            ps_0 = (ps[0] - 124) // 32 + 124
+            ps_1 = (ps[1] - 124) // 32 + 124
+            return tuple([ps_0, ps_1])
 
     @ staticmethod
     def load_weights(ckpt_dir, layers2load):

@@ -3,7 +3,15 @@ import numpy as np
 import tensorflow as tf
 
 
-class ValueSummaryHook(object):
+class Hook(object):
+    def __init__(self, verb_step):
+        self.verb_step = verb_step
+
+    def run(self, **kwargs):
+        raise NotImplementedError
+
+
+class ValueSummaryHook(Hook):
     """
     This hook is used to print/write value of given variables every few steps
     """
@@ -19,7 +27,6 @@ class ValueSummaryHook(object):
         :param log_time: if True, it will print out duration between two self.run() is called
         :param run_time: how many times to run the variable, this could be set to a large number when validation
         """
-        self.verb_step = verb_step
         if type(value) is not list:
             value = [value]
         self.value = value
@@ -44,6 +51,7 @@ class ValueSummaryHook(object):
             self.time = time.time()
             self.cust_str += ', Duration: {:.3f}'
         self.run_time = run_time
+        super().__init__(verb_step)
 
     def run(self, step, sess, summary_writer=None):
         """
@@ -72,7 +80,7 @@ class ValueSummaryHook(object):
                 summary_writer.flush()
 
 
-class ImageValidSummaryHook(object):
+class ImageValidSummaryHook(Hook):
     """
     Record validation image in tensorboard
     """
@@ -90,7 +98,6 @@ class ImageValidSummaryHook(object):
         :param max_output: maximum number of images to show in the tensorboard
         :param img_mean:
         """
-        self.verb_step = verb_step
         self.value = value
         self.summary_op = tf.summary.image(name, self.value, max_outputs=max_output)
         self.feature = feature
@@ -98,6 +105,7 @@ class ImageValidSummaryHook(object):
         self.pred = pred
         self.summary_func = summary_func
         self.img_mean = img_mean
+        super().__init__(verb_step)
 
     def run(self, step, sess, summary_writer):
         """
@@ -114,7 +122,7 @@ class ImageValidSummaryHook(object):
             summary_writer.flush()
 
 
-class IoUSummaryHook(object):
+class IoUSummaryHook(Hook):
     """
     Print/Write IoU
     """
@@ -128,7 +136,6 @@ class IoUSummaryHook(object):
         :param log_time: if True, it will print out duration between two self.run() is called
         :param run_time: how many times to run the variable, this could be set to a large number when validation
         """
-        self.verb_step = verb_step
         self.value = value
         self.val_names = value_names
         self.valid_iou = tf.placeholder(tf.float32, [])
@@ -140,6 +147,7 @@ class IoUSummaryHook(object):
             self.time = time.time()
             self.cust_str += ', Duration: {:.3f}'
         self.run_time = run_time
+        super().__init__(verb_step)
 
     def run(self, step, sess, summary_writer=None):
         """
@@ -164,3 +172,28 @@ class IoUSummaryHook(object):
                 summary = sess.run(self.summary_op, feed_dict={self.valid_iou: iou})
                 summary_writer.add_summary(summary, step)
                 summary_writer.flush()
+
+
+class ModelSaveHook(Hook):
+    """
+    Save the model every few steps
+    """
+    def __init__(self, verb_step, ckdir):
+        """
+        Initialize the object
+        :param verb_step: #steps between two print/write operation
+        :param ckdir: checkpoint directory to save the model
+        """
+        self.saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=1)
+        self.ckdir = ckdir
+        super().__init__(verb_step)
+
+    def run(self, step, sess, summary_writer=None):
+        """
+        :param step: The current global step number
+        :param sess: session to run the summary writer
+        :param summary_writer: summary writer
+        :return:
+        """
+        if step % self.verb_step == 0:
+            self.saver.save(sess, '{}/model_{}.ckpt'.format(self.ckdir, step), global_step=step)

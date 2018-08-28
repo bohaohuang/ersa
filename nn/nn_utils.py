@@ -122,7 +122,7 @@ def upsample_conv_concat(input_a, input_b, filter_n, training, name, size=(2, 2)
     """
     upsample = upsampling_2d(input_a, size=size, name=name)
     upsample = conv_conv_pool(upsample, filter_n, training, 'upsample_'+name, kernel_size=(2, 2), pool=False)
-    return tf.concat([upsample, input_b], axis=-1, name='concat_{}'.format(name))
+    return tf.concat([input_b, upsample], axis=-1, name='concat_{}'.format(name))
 
 
 def crop_upsample_concat(input_a, input_b, margin, name):
@@ -134,10 +134,9 @@ def crop_upsample_concat(input_a, input_b, margin, name):
     :param name: name for this variable scope
     :return:
     """
-    with tf.variable_scope('crop_upsample_concat'):
-        _, w, h, _ = input_b.get_shape().as_list()
-        input_b_crop = tf.image.resize_image_with_crop_or_pad(input_b, w - margin, h - margin)
-        return upsample_concat(input_a, input_b_crop, name)
+    _, w, h, _ = input_b.get_shape().as_list()
+    input_b_crop = tf.image.resize_image_with_crop_or_pad(input_b, w - margin, h - margin)
+    return upsample_concat(input_a, input_b_crop, name)
 
 
 def crop_upsample_conv_concat(input_a, input_b, margin, name, filter_n, training):
@@ -151,10 +150,9 @@ def crop_upsample_conv_concat(input_a, input_b, margin, name, filter_n, training
     :param training: indicates it is in training or not
     :return:
     """
-    with tf.variable_scope('crop_upsample_concat'):
-        _, w, h, _ = input_b.get_shape().as_list()
-        input_b_crop = tf.image.resize_image_with_crop_or_pad(input_b, w - margin, h - margin)
-        return upsample_conv_concat(input_a, input_b_crop, filter_n, training, name)
+    _, w, h, _ = input_b.get_shape().as_list()
+    input_b_crop = tf.image.resize_image_with_crop_or_pad(input_b, w - margin, h - margin)
+    return upsample_conv_concat(input_a, input_b_crop, filter_n, training, name)
 
 
 def fc_fc(input_, n_filters, training, name, activation=tf.nn.relu, dropout=True, dropout_rate=None):
