@@ -8,6 +8,7 @@
 temp.py
 *.npy
 nn/test.py
+nn/test_deeplab.py
 
 \]task/
 \]bad_ideas/
