@@ -256,6 +256,53 @@ def pad_prediction(image, prediction):
         return prediction
 
 
+def iou_metric(truth, pred, truth_val=1, divide_flag=False):
+    """
+    calculate iou with given truth and prediction map
+    :param truth: truth image
+    :param pred: prediction map
+    :param truth_val: truth value, default to 1
+    :param divide_flag: if False, numerator and denominator will be returned separately
+    :return: iou scalar value or numerator and denominator list
+    """
+    truth = truth / truth_val
+    pred = pred / truth_val
+    truth = truth.flatten()
+    pred = pred.flatten()
+    intersect = truth*pred
+    if divide_flag:
+        return np.sum(intersect == 1), np.sum(truth+pred >= 1)
+    else:
+        return np.sum(intersect == 1) / np.sum(truth+pred >= 1)
+
+
+def read_iou_from_file(result_record):
+    """
+    read iou records from a file, ious will be stored based on each file and each filed (city_name)
+    :param result_record: record read from a result file
+    :return: tile based iou, field based iou and overall iou
+    """
+    tile_dict = {}
+    field_list = []
+    field_dict = {}
+    overall = np.zeros(2)
+    for cnt, line in enumerate(result_record[:-1]):
+        tile_name = line.split(' ')[0]
+        a, b = [float(item) for item in line.split('(')[1].strip().strip(')').split(',')]
+        tile_dict[tile_name] = a / b
+        field_name = ''.join([a for a in tile_name if not a.isdigit()])
+        if field_name not in field_dict:
+            field_list.append(field_name)
+            field_dict[field_name] = np.array([a, b])
+        else:
+            field_dict[field_name] += np.array([a, b])
+        overall += np.array([a, b])
+    for field_name in field_list:
+        field_dict[field_name] = field_dict[field_name][0] / field_dict[field_name][1]
+    overall = overall[0] / overall[1]
+    return tile_dict, field_dict, overall
+
+
 def image_summary(image, truth, prediction, img_mean=np.array((0, 0, 0), dtype=np.float32), label_num=2):
     """
     Make a image summary where the format is image|truth|pred

@@ -15,5 +15,6 @@
 - [X] DataReader
 - [ ] Neural Network
     - [X] model.train
-    - [ ] model.eval
+    - [X] model.eval
+    - [ ] Re-exam model.train
 - [ ] Utils

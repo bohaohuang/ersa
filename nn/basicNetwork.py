@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from glob import glob
 from nn import nn_utils
+from nn import nn_processor
 
 
 class Network(object):
@@ -200,6 +201,23 @@ class Network(object):
         """
         return nn_utils.get_epoch_step(self.n_train, self.bs)
 
+    def test_sample(self, sess, valid_init):
+        """
+        Test all samples in given dataset, return a list of predictions
+        :param sess: session to run operations
+        :param valid_init: init operation for corresponding data reader
+        :return: list of predictions
+        """
+        result = []
+        sess.run([valid_init, self.train_op[False]])
+        try:
+            while True:
+                pred = sess.run(self.output)
+                result.append(pred)
+        except tf.errors.OutOfRangeError:
+            result = np.vstack(result)
+            return result
+
 
 class SegmentationNetwork(Network):
     """
@@ -227,7 +245,7 @@ class SegmentationNetwork(Network):
         super().__init__(class_num, dropout_rate, name, suffix, learn_rate, decay_step, decay_rate,
                          epochs, batch_size)
 
-    def create_graph(self, **kwargs):
+    def create_graph(self, feature, **kwargs):
         raise NotImplementedError('Must be implemented by the subclass')
 
     def make_loss(self, label, loss_type='xent'):
@@ -314,6 +332,37 @@ class SegmentationNetwork(Network):
             finally:
                 saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=1)
                 saver.save(sess, '{}/model.ckpt'.format(self.ckdir), global_step=self.global_step)
+
+    def evaluate(self, file_list, input_size, tile_size, batch_size, img_mean,
+                 model_dir, gpu=None, save_result_parent_dir=None, name='nn_estimator_segment',
+                 verb=True, ds_name='default', load_epoch_num=None, best_model=False,
+                 truth_val=1, force_run=False, **kwargs):
+        """
+        Evaluate model on given validation set
+        :param file_list: evaluation file list
+        :param input_size: dimension of the input to the network
+        :param tile_size: dimension of the single evaluation file
+        :param batch_size: batch size
+        :param img_mean: mean of each channel
+        :param model_dir: path to the pretrained model
+        :param gpu: which gpu to run the model, default to use all the gpus available
+        :param save_result_parent_dir: parent directory to where the result will be stored
+        :param name: name of the process
+        :param verb: if True, print out message when evaluating
+        :param ds_name: name of the dataset
+        :param load_epoch_num: which epoch's ckpt to load
+        :param best_model: if True, load the model with best performance on the validation set
+        :param truth_val: value of H1 pixel in gt
+        :param force_run: if True, run the evaluation even if results already exist
+        :param kwargs: other parameters
+        :return: tile based iou, field based iou and overall iou
+        """
+        estimator = nn_processor.NNEstimatorSegment(
+            self, file_list, input_size, tile_size, batch_size, img_mean, model_dir, ds_name, save_result_parent_dir,
+            name=name, gpu=gpu, verb=verb, load_epoch_num=load_epoch_num, best_model=best_model, truth_val=truth_val,
+            **kwargs)
+        tile_dict, field_dict, overall = estimator.run(force_run=force_run).load_results()
+        return tile_dict, field_dict, overall
 
     @staticmethod
     def get_overlap():

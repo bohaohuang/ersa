@@ -1,6 +1,8 @@
+import functools
 import numpy as np
 import tensorflow as tf
 import utils
+from preprocess import patchExtractor as pe
 
 
 class DataReaderSegmentation(object):
@@ -244,3 +246,107 @@ class DataReaderSegmentationTrainValid(object):
         valid_init_op = iterator.make_initializer(dataset_valid)
 
         return train_init_op, valid_init_op, reader_op
+
+
+class DataReaderSegmentationTesting(DataReaderSegmentation):
+    def __init__(self, input_size, tile_size, file_list, overlap=0, pad=0, batch_size=5, chan_mean=None, aug_func=None,
+                 is_train=False, random=False, has_gt=True, gt_dim=0, include_gt=True):
+        """
+        Initialize a data reader for segmentation model for testing
+        It will create a dataset and init_op for each image file
+        :param input_size: patch size to be read
+        :param tile_size: tile size to be read
+        :param file_list: list of lists of patch files
+        :param overlap: overlap pixels between to adjacent patches
+        :param pad: padding pixels around the patch
+        :param batch_size: batch size to read each time
+        :param chan_mean: mean of the channel, if set to None it will be zeros for all non gt channels
+        :param aug_func: augmentation function, could be a list of augmentation functions or leave to None
+        :param is_train: it's used for training, then no random permutation will be used, this will not be used here
+        :param random: if use random permutation or not, this will not be used here
+        :param has_gt: the input file list has ground truth or not
+        :param gt_dim: how many 3rd dimension the input data has
+        :param include_gt: reads gt or not
+        """
+        self.tile_size = tile_size
+        self.overlap = overlap
+        self.pad = pad
+        super().__init__(input_size, file_list, batch_size, chan_mean, aug_func, is_train, random,
+                         has_gt, gt_dim, include_gt)
+
+    def data_reader_file(self, file):
+        """
+        Read feature and label, or feature alone
+        :param file: name of the file
+        :return: data read from file list, one line each time
+        """
+        # patchify the data here
+        data_block = []
+        for f in file:
+            data_block.append(utils.load_file(f))
+        data_block = np.dstack(data_block)
+        grid_list = pe.make_grid((self.tile_size[0] + self.pad * 2, self.tile_size[1] + self.pad * 2),
+                                 self.input_size, self.overlap)
+        for patch in pe.patch_block(data_block, self.pad, grid_list, self.input_size):
+            yield self.data_reader_helper(patch)
+
+    def data_reader_helper(self, data_block):
+        """
+        Helper function of data reader, reads list of lists files
+        :param patch: data block
+        :return: feature and label, or only feature
+        """
+        for aug_func in self.aug_func:
+            data_block = aug_func(data_block)
+        if self.has_gt:
+            ftr_block = data_block[:, :, :-self.gt_dim]
+            ftr_block = ftr_block - self.chan_mean
+            lbl_block = data_block[:, :, -self.gt_dim:]
+            if self.include_gt:
+                return ftr_block, lbl_block
+            else:
+                return ftr_block
+        else:
+            data_block = data_block - self.chan_mean
+            return data_block
+
+    def get_dataset(self):
+        """
+        Create a tf.Dataset from the generator defined
+        :return: a tf.Dataset object
+        """
+        dataset_list = []
+        for file in self.file_list:
+            def generator(f): return self.data_reader_file(f)
+            if self.has_gt and self.include_gt:
+                dataset = tf.data.Dataset.from_generator(functools.partial(generator, file), (tf.float32, tf.int32),
+                                                         ((self.input_size[0], self.input_size[1],
+                                                           self.channel_num - self.gt_dim),
+                                                          (self.input_size[0], self.input_size[1], self.gt_dim)))
+            elif self.has_gt and not self.include_gt:
+                dataset = tf.data.Dataset.from_generator(functools.partial(generator, file), (tf.float32,),
+                                                         ((self.input_size[0], self.input_size[1],
+                                                           self.channel_num - self.gt_dim)))
+            else:
+                dataset = tf.data.Dataset.from_generator(functools.partial(generator, file), (tf.float32,),
+                                                         ((self.input_size[0], self.input_size[1], self.channel_num),))
+            dataset_list.append(dataset)
+        return dataset_list
+
+    def read_op(self):
+        """
+        Get tf iterator as well as init operation for the dataset
+        :return: reader operation and init operation
+        """
+        dataset = self.get_dataset()
+        for i in range(len(dataset)):
+            dataset[i] = dataset[i].batch(self.batch_size)
+
+        iterator = tf.data.Iterator.from_structure(dataset[0].output_types, dataset[0].output_shapes)
+        reader_op = iterator.get_next()
+
+        init_op = []
+        for i in range(len(dataset)):
+            init_op.append(iterator.make_initializer(dataset[i]))
+
+        return init_op, reader_op

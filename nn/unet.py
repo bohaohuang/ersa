@@ -9,7 +9,7 @@ class UNet(basicNetwork.SegmentationNetwork):
     Implements the U-Net from https://arxiv.org/pdf/1505.04597.pdf
     """
     def __init__(self, class_num, input_size, dropout_rate=None, name='unet', suffix='', learn_rate=1e-4,
-                 decay_step=60, decay_rate=0.1, epochs=100, batch_size=5):
+                 decay_step=60, decay_rate=0.1, epochs=100, batch_size=5, start_filter_num=32):
         """
         Initialize the object
         :param class_num: class number in labels, determine the # of output units
@@ -22,18 +22,20 @@ class UNet(basicNetwork.SegmentationNetwork):
         :param decay_rate: learning rate will be decayed to lr*decay_rate
         :param epochs: #epochs to train
         :param batch_size: batch size
+        :param start_filter_num: #filters at the first layer
         """
+        self.sfn = start_filter_num
         super().__init__(class_num, input_size, dropout_rate, name, suffix, learn_rate, decay_step,
                          decay_rate, epochs, batch_size)
 
-    def create_graph(self, feature, start_filter_num):
+    def create_graph(self, feature, **kwargs):
         """
         Create graph for the U-Net
         :param feature: input image
         :param start_filter_num: #filters at the start layer, #filters in U-Net grows exponentially
         :return:
         """
-        sfn = start_filter_num
+        sfn = self.sfn
 
         # downsample
         conv1, pool1 = nn_utils.conv_conv_pool(feature, [sfn, sfn], self.mode, name='conv1',

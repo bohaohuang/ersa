@@ -13,19 +13,64 @@ def make_grid(tile_size, patch_size, overlap):
     :param overlap: #overlapping pixels
     :return:
     """
-    # make the grid of indexes at which to extract patches
-    # get the boundary of the tile given the patch size
-    max_im0 = tile_size[0] - patch_size[0] - 1
-    max_im1 = tile_size[1] - patch_size[1] - 1
-    # overlap by number of pixels specified
-    # add the last possible patch to ensure that you are covering all the pixels in the image
-    patch_grid_y = list(range(0, max_im0, patch_size[0] - overlap))
-    patch_grid_y = patch_grid_y + [max_im0]
-    patch_grid_x = list(range(0, max_im1, patch_size[1] - overlap))
-    patch_grid_x = patch_grid_x + [max_im1]
+    max_h = tile_size[0] - patch_size[0]
+    max_w = tile_size[1] - patch_size[1]
+    if max_h > 0 and max_w > 0:
+        h_step = np.ceil(tile_size[0] / (patch_size[0] - overlap))
+        w_step = np.ceil(tile_size[1] / (patch_size[1] - overlap))
+    else:
+        h_step = 1
+        w_step = 1
+    patch_grid_h = np.floor(np.linspace(0, max_h, h_step)).astype(np.int32)
+    patch_grid_w = np.floor(np.linspace(0, max_w, w_step)).astype(np.int32)
 
-    y, x = np.meshgrid(patch_grid_y, patch_grid_x)
+    y, x = np.meshgrid(patch_grid_h, patch_grid_w)
     return list(zip(y.flatten(), x.flatten()))
+
+
+def patch_block(block, pad, grid_list, patch_size, return_coord=False):
+    """
+    make a data block into patches
+    :param block: data block to be patched, shold be h*w*c
+    :param pad: #pixels to pad around
+    :param grid_list: list of grids
+    :param patch_size: size of the patch
+    :param return_coord: if True, coordinates of x and y will be returned
+    :return: yields patches or as well as x and y coordinates
+    """
+    # pad image first if it is necessary
+    if pad > 0:
+        block = utils.pad_image(block, pad)
+    # extract images
+    for y, x in grid_list:
+        patch = utils.crop_image(block, y, x, patch_size[0], patch_size[1])
+        if return_coord:
+            yield patch, y, x
+        else:
+            yield patch
+
+
+def unpatch_block(blocks, tile_dim, patch_size, tile_dim_output=None, patch_size_output=None, overlap=0):
+    """
+    Unpatch a block, set tile_dim_output and patch_size_output to a proper number if padding exits
+    :param blocks: data blocks, should be n*h*w*c
+    :param tile_dim: input tile dimension, if padding exits should be h+2*pad, w+2*pad
+    :param patch_size: input patch size
+    :param tile_dim_output: output tile dimension
+    :param patch_size_output: output patch dimension, if shrinking exits, should be h-2*pd, w-2*pad
+    :param overlap: overlap of adjacent patches
+    :return:
+    """
+    if tile_dim_output is None:
+        tile_dim_output = tile_dim
+    if patch_size_output is None:
+        patch_size_output = patch_size
+    _, _, _, c = blocks.shape
+    image = np.zeros((tile_dim_output[0], tile_dim_output[1], c))
+    for cnt, (corner_h, corner_w) in enumerate(make_grid(tile_dim, patch_size, overlap)):
+        image[corner_h:corner_h + patch_size_output[0], corner_w:corner_w + patch_size_output[1], :] \
+            += blocks[cnt, :, :, :]
+    return image
 
 
 class PatchExtractor(processBlock.BasicProcess):
@@ -67,14 +112,10 @@ class PatchExtractor(processBlock.BasicProcess):
             for f, ext in zip(files, kwargs['file_exts']):
                 patch_list_ext = []
                 img = utils.load_file(f)
-                # pad image first if it is necessary
-                if self.pad > 0:
-                    img = utils.pad_image(img, self.pad)
                 # extract images
-                for y, x in grid_list:
+                for patch, y, x in patch_block(img, self.pad, grid_list, self.patch_size, return_coord=True):
                     patch_name = '{}_y{}x{}.{}'.format(os.path.basename(f).split('.')[0], int(y), int(x), ext)
                     patch_name = os.path.join(self.path, patch_name)
-                    patch = utils.crop_image(img, y, x, self.patch_size[0], self.patch_size[1])
                     utils.save_file(patch_name, patch.astype(np.uint8))
                     patch_list_ext.append(patch_name)
                 patch_list.append(patch_list_ext)

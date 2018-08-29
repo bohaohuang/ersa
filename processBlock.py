@@ -49,6 +49,10 @@ class BasicProcess(object):
             # if haven't run before, run the process
             if not self.check_finish():
                 self.func(**kwargs)
+
+            # write state log as complete
+            with open(self.state_file, 'w') as f:
+                f.write('Finished\n')
         return self
 
     def check_finish(self):

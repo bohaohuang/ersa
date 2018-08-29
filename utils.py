@@ -73,6 +73,9 @@ def load_file(file_name):
         elif file_name[-3:] == 'pkl':
             with open(file_name, 'rb') as f:
                 data = pickle.load(f)
+        elif file_name[-3:] == 'txt':
+            with open(file_name, 'r') as f:
+                data = f.readlines()
         else:
             data = imageio.imread(file_name)
 

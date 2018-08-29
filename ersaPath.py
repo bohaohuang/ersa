@@ -6,4 +6,4 @@ Must have a dataPath and resPath defined
 
 PATH = {'data': r'/hdd/ersa',
         'model': r'/hdd6/Models',
-        'eval': None}
+        'eval': r'/hdd/Results'}
