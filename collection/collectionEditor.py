@@ -1,7 +1,7 @@
 import os
 from tqdm import tqdm
 from fractions import Fraction
-import utils
+import ersa_utils
 import processBlock
 from collection import collectionMaker
 
@@ -25,7 +25,7 @@ class SingleChanMult(processBlock.BasicProcess):
         self.mult_factor = mult_factor
         self.field_ext_pair = field_ext_pair
         self.clc = collectionMaker.read_collection(clc_dir=path)
-        path = utils.get_block_dir('data', ['preprocess', os.path.basename(path), name])
+        path = ersa_utils.get_block_dir('data', ['preprocess', os.path.basename(path), name])
         self.files = []
         super().__init__(name, path, func)
 
@@ -52,9 +52,9 @@ class SingleChanMult(processBlock.BasicProcess):
                 save_name = save_name.replace(save_name.split('.')[-1], kwargs['file_ext'])
             save_name = os.path.join(self.path, os.path.basename(save_name))
             pbar.set_description('Making {}'.format(os.path.basename(save_name)))
-            img = utils.load_file(img_file[0])
+            img = ersa_utils.load_file(img_file[0])
             img = (img * self.mult_factor)
             if 'd_type' in kwargs:
                 img = img.astype(kwargs['d_type'])
-            utils.save_file(save_name, img)
+            ersa_utils.save_file(save_name, img)
             self.files.append(save_name)

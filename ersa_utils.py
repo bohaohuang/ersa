@@ -197,3 +197,12 @@ def get_color_list():
     """
     colors = get_default_colors()
     return [tuple(int(a.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)) for a in colors]
+
+
+def float2str(f):
+    """
+    Return a string for float number and change '.' to character 'p'
+    :param f: float number
+    :return: changed string
+    """
+    return '{}'.format(f).replace('.', 'p')

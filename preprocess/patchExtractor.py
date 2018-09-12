@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from tqdm import tqdm
-import utils
+import ersa_utils
 import processBlock
 
 
@@ -40,10 +40,10 @@ def patch_block(block, pad, grid_list, patch_size, return_coord=False):
     """
     # pad image first if it is necessary
     if pad > 0:
-        block = utils.pad_image(block, pad)
+        block = ersa_utils.pad_image(block, pad)
     # extract images
     for y, x in grid_list:
-        patch = utils.crop_image(block, y, x, patch_size[0], patch_size[1])
+        patch = ersa_utils.crop_image(block, y, x, patch_size[0], patch_size[1])
         if return_coord:
             yield patch, y, x
         else:
@@ -91,7 +91,7 @@ class PatchExtractor(processBlock.BasicProcess):
         self.overlap = overlap
         self.pad = pad
         pe_name = '{}_h{}w{}_overlap{}_pad{}'.format(name, self.patch_size[0], self.patch_size[1], self.overlap, self.pad)
-        path = utils.get_block_dir('data', [name, ds_name, pe_name])
+        path = ersa_utils.get_block_dir('data', [name, ds_name, pe_name])
         super().__init__(pe_name, path, func=self.process)
 
     def process(self, **kwargs):
@@ -111,15 +111,15 @@ class PatchExtractor(processBlock.BasicProcess):
             patch_list = []
             for f, ext in zip(files, kwargs['file_exts']):
                 patch_list_ext = []
-                img = utils.load_file(f)
+                img = ersa_utils.load_file(f)
                 # extract images
                 for patch, y, x in patch_block(img, self.pad, grid_list, self.patch_size, return_coord=True):
                     patch_name = '{}_y{}x{}.{}'.format(os.path.basename(f).split('.')[0], int(y), int(x), ext)
                     patch_name = os.path.join(self.path, patch_name)
-                    utils.save_file(patch_name, patch.astype(np.uint8))
+                    ersa_utils.save_file(patch_name, patch.astype(np.uint8))
                     patch_list_ext.append(patch_name)
                 patch_list.append(patch_list_ext)
-            patch_list = utils.rotate_list(patch_list)
+            patch_list = ersa_utils.rotate_list(patch_list)
             for items in patch_list:
                 record_file.write('{}\n'.format(' '.join(items)))
         record_file.close()

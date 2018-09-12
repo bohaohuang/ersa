@@ -3,7 +3,7 @@ import re
 import numpy as np
 from glob import glob
 from tqdm import tqdm
-import utils
+import ersa_utils
 import processBlock
 
 
@@ -30,7 +30,7 @@ def get_channel_mean(parent_dir, img_files):
     chan_num = 0
     chan_record = [0]
     for f in temp_file:
-        c_num = utils.get_img_channel_num(os.path.join(parent_dir, f))
+        c_num = ersa_utils.get_img_channel_num(os.path.join(parent_dir, f))
         chan_num += c_num
         chan_record.append(chan_num)
     # compute channel mean
@@ -39,7 +39,7 @@ def get_channel_mean(parent_dir, img_files):
     for file_item in pbar:
         pbar.set_description('Calculating means')
         for cnt, f in enumerate(file_item):
-            data = utils.load_file(os.path.join(parent_dir, f))
+            data = ersa_utils.load_file(os.path.join(parent_dir, f))
             chan_mean[chan_record[cnt]:chan_record[cnt+1]] += get_mean(data, chan_record[cnt+1]-chan_record[cnt])
     chan_mean = chan_mean / len(img_files)
     return chan_mean
@@ -68,11 +68,11 @@ def read_collection(clc_name=None, clc_dir=None, raw_data_path=None, field_name=
     """
     if clc_dir is None:
         assert clc_name is not None
-        clc_dir = utils.get_block_dir('data', ['collection', clc_name])
+        clc_dir = ersa_utils.get_block_dir('data', ['collection', clc_name])
     # check if finish
     if processBlock.BasicProcess('collection_maker', clc_dir).check_finish():
         # read metadata
-        meta_data = utils.load_file(os.path.join(clc_dir, 'meta.pkl'))
+        meta_data = ersa_utils.load_file(os.path.join(clc_dir, 'meta.pkl'))
         # create collection
         cm = CollectionMaker(meta_data['raw_data_path'], meta_data['field_name'], meta_data['field_id'],
                              meta_data['rgb_ext'], meta_data['gt_ext'], meta_data['file_ext'],
@@ -109,15 +109,15 @@ class CollectionMaker(object):
         :param force_run: force run the collection maker even if it already exists
         """
         self.raw_data_path = raw_data_path
-        self.field_name = utils.str2list(field_name, d_type=str)    # name of the 'cities' to include in the collection
-        self.field_id = utils.str2list(field_id, d_type=str)        # id of the 'cities' to include in the collection
-        self.rgb_ext = utils.str2list(rgb_ext, d_type=str)
+        self.field_name = ersa_utils.str2list(field_name, d_type=str)    # name of the 'cities' to include in the collection
+        self.field_id = ersa_utils.str2list(field_id, d_type=str)        # id of the 'cities' to include in the collection
+        self.rgb_ext = ersa_utils.str2list(rgb_ext, d_type=str)
         self.gt_ext = gt_ext
         if len(gt_ext) == 0:
             has_gt_ext = 0
         else:
             has_gt_ext = 1
-        self.file_ext = utils.str2list(file_ext, d_type=str)
+        self.file_ext = ersa_utils.str2list(file_ext, d_type=str)
         assert len(self.file_ext) == 1 or len(self.file_ext) == len(self.rgb_ext) + has_gt_ext
         if len(self.file_ext) == 1:
             self.file_ext = [self.file_ext[0] for _ in range(len(self.rgb_ext) + has_gt_ext)]
@@ -154,7 +154,7 @@ class CollectionMaker(object):
         Get or create directory of this collection
         :return: directory of the collection
         """
-        return utils.get_block_dir('data', ['collection', self.clc_name])
+        return ersa_utils.get_block_dir('data', ['collection', self.clc_name])
 
     def get_files(self, regexp, full_path=False):
         """
@@ -178,17 +178,17 @@ class CollectionMaker(object):
         :param file_ext: file extension (e.g., tif)
         :return: list of lists, where each row is file names of same place with different files
         """
-        field_name = utils.str2list(field_name, d_type=str)
-        field_id = utils.str2list(field_id, d_type=str)
-        field_ext = utils.str2list(field_ext, d_type=str)
-        file_ext = utils.str2list(file_ext, d_type=str)
+        field_name = ersa_utils.str2list(field_name, d_type=str)
+        field_id = ersa_utils.str2list(field_id, d_type=str)
+        field_ext = ersa_utils.str2list(field_ext, d_type=str)
+        file_ext = ersa_utils.str2list(file_ext, d_type=str)
         if len(file_ext) == 1:
             file_ext = [file_ext[0] for _ in range(len(field_ext))]
         file_selection = []
         for field, file in zip(field_ext, file_ext):
             regexp = self.make_regexp(field_name, field_id, field, file)
             file_selection.append(self.get_files(regexp, full_path=True))
-        file_selection = utils.rotate_list(file_selection)
+        file_selection = ersa_utils.rotate_list(file_selection)
         return file_selection
 
     def make_collection(self):
@@ -205,10 +205,10 @@ class CollectionMaker(object):
         for cnt, ext in enumerate(self.rgb_ext):
             rgb_regexp = self.make_regexp(self.field_name, self.field_id, ext, self.file_ext[cnt])
             rgb_files.append(self.get_files(rgb_regexp, full_path=True))
-        rgb_files = utils.rotate_list(rgb_files)
+        rgb_files = ersa_utils.rotate_list(rgb_files)
 
         # make meta_data
-        tile_dim = utils.load_file(rgb_files[0][0]).shape[:2]
+        tile_dim = ersa_utils.load_file(rgb_files[0][0]).shape[:2]
         channel_mean = get_channel_mean(self.raw_data_path, rgb_files)
 
         meta_data = {'raw_data_path': self.raw_data_path,
@@ -223,14 +223,14 @@ class CollectionMaker(object):
                      'rgb_files': rgb_files,
                      'chan_mean': channel_mean,
                      'files': self.files}
-        utils.save_file(os.path.join(self.clc_dir, 'meta.pkl'), meta_data)
+        ersa_utils.save_file(os.path.join(self.clc_dir, 'meta.pkl'), meta_data)
 
     def read_meta_data(self):
         """
         Read meta data of the collection
         :return:
         """
-        meta_data = utils.load_file(os.path.join(self.clc_dir, 'meta.pkl'))
+        meta_data = ersa_utils.load_file(os.path.join(self.clc_dir, 'meta.pkl'))
         return meta_data
 
     def print_meta_data(self):
@@ -238,7 +238,7 @@ class CollectionMaker(object):
         Print the meta data in a human readable format
         :return:
         """
-        print(utils.make_center_string('=', 88, self.clc_name))
+        print(ersa_utils.make_center_string('=', 88, self.clc_name))
         skip_keys = ['gt_files', 'rgb_files', 'rgb_ext', 'gt_ext', 'file_ext', 'files']
         for key, val in self.meta_data.items():
             if key in skip_keys:
@@ -254,7 +254,7 @@ class CollectionMaker(object):
                                                  for ext1, ext2 in zip(self.rgb_ext, self.file_ext)])))
         if len(self.gt_ext) > 0:
             print('GT file: {}'.format('*{}*.{}'.format(self.gt_ext, self.file_ext[-1])))
-        print(utils.make_center_string('=', 88))
+        print(ersa_utils.make_center_string('=', 88))
 
     def replace_channel(self, files, is_gt, field_ext_pair, new_file_ext=None):
         """
@@ -324,7 +324,7 @@ class CollectionMaker(object):
             field_name = self.field_name
         if field_id is None:
             field_id = self.field_id
-        field_ext = utils.str2list(field_ext, d_type=str)
+        field_ext = ersa_utils.str2list(field_ext, d_type=str)
         files = []
         for fe in field_ext:
             if fe in self.rgb_ext:
@@ -333,10 +333,10 @@ class CollectionMaker(object):
                 select_file_ext = self.file_ext[-1]
             if type(field_id) is not str:
                 field_id = str(field_id)
-            file = utils.rotate_list(self.get_file_selection(field_name, field_id, fe, select_file_ext))[0]
+            file = ersa_utils.rotate_list(self.get_file_selection(field_name, field_id, fe, select_file_ext))[0]
             files.append(file)
 
-        files = utils.rotate_list(files)
+        files = ersa_utils.rotate_list(files)
         if len(files) == 1:
             if len(files[0]) == 1:
                 # only one file been requested

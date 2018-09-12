@@ -157,6 +157,7 @@ class Network(object):
                 else:
                     try:
                         # try load latest model directly
+                        print(model_path)
                         latest_check_point = tf.train.latest_checkpoint(model_path)
                         saver.restore(sess, latest_check_point)
                         print('loaded {}'.format(latest_check_point))
@@ -336,7 +337,7 @@ class SegmentationNetwork(Network):
     def evaluate(self, file_list, input_size, tile_size, batch_size, img_mean,
                  model_dir, gpu=None, save_result_parent_dir=None, name='nn_estimator_segment',
                  verb=True, ds_name='default', load_epoch_num=None, best_model=False,
-                 truth_val=1, force_run=False, **kwargs):
+                 truth_val=1, force_run=False, score_results=True, split_char='_', **kwargs):
         """
         Evaluate model on given validation set
         :param file_list: evaluation file list
@@ -355,14 +356,20 @@ class SegmentationNetwork(Network):
         :param truth_val: value of H1 pixel in gt
         :param force_run: if True, run the evaluation even if results already exist
         :param kwargs: other parameters
+        :param score_result: if False, no gt used to score results
+        :param split_char: character used to split file name
         :return: tile based iou, field based iou and overall iou
         """
         estimator = nn_processor.NNEstimatorSegment(
             self, file_list, input_size, tile_size, batch_size, img_mean, model_dir, ds_name, save_result_parent_dir,
             name=name, gpu=gpu, verb=verb, load_epoch_num=load_epoch_num, best_model=best_model, truth_val=truth_val,
-            **kwargs)
-        tile_dict, field_dict, overall = estimator.run(force_run=force_run).load_results()
-        return tile_dict, field_dict, overall
+            score_results=score_results, split_char=split_char, **kwargs)
+        if score_results:
+            tile_dict, field_dict, overall = estimator.run(force_run=force_run).load_results()
+            return tile_dict, field_dict, overall
+        else:
+            estimator.run(force_run=force_run)
+            return estimator.score_save_dir
 
     @staticmethod
     def get_overlap():

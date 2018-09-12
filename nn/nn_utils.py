@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-import utils
+import ersa_utils
 
 
 def set_gpu(gpu=None):
@@ -198,7 +198,7 @@ def decode_labels(label, label_num=2):
     """
     n, h, w, c = label.shape
     outputs = np.zeros((n, h, w, 3), dtype=np.uint8)
-    color_list = utils.get_color_list()
+    color_list = ersa_utils.get_color_list()
     label_colors = {}
     for i in range(label_num):
         label_colors[i] = color_list[i]

@@ -50,16 +50,16 @@ class UNet(basicNetwork.SegmentationNetwork):
                                                 padding='valid', dropout=self.dropout_rate)
 
         # upsample
-        up6 = nn_utils.crop_upsample_conv_concat(conv5, conv4, 8, name='6', filter_n=[sfn*8], training=self.mode)
+        up6 = nn_utils.crop_upsample_concat(conv5, conv4, 8, name='6')
         conv6 = nn_utils.conv_conv_pool(up6, [sfn * 8, sfn * 8], self.mode, name='up6', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
-        up7 = nn_utils.crop_upsample_conv_concat(conv6, conv3, 32, name='7', filter_n=[sfn*4], training=self.mode)
+        up7 = nn_utils.crop_upsample_concat(conv6, conv3, 32,name='7')
         conv7 = nn_utils.conv_conv_pool(up7, [sfn * 4, sfn * 4], self.mode, name='up7', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
-        up8 = nn_utils.crop_upsample_conv_concat(conv7, conv2, 80, name='8', filter_n=[sfn*2], training=self.mode)
+        up8 = nn_utils.crop_upsample_concat(conv7, conv2, 80, name='8')
         conv8 = nn_utils.conv_conv_pool(up8, [sfn * 2, sfn * 2], self.mode, name='up8', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
-        up9 = nn_utils.crop_upsample_conv_concat(conv8, conv1, 176, name='9', filter_n=[sfn], training=self.mode)
+        up9 = nn_utils.crop_upsample_concat(conv8, conv1, 176, name='9')
         conv9 = nn_utils.conv_conv_pool(up9, [sfn, sfn], self.mode, name='up9', pool=False,
                                         padding='valid', dropout=self.dropout_rate)
 

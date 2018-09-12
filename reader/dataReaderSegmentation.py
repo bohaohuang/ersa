@@ -1,7 +1,7 @@
 import functools
 import numpy as np
 import tensorflow as tf
-import utils
+import ersa_utils
 from preprocess import patchExtractor as pe
 
 
@@ -39,7 +39,7 @@ class DataReaderSegmentation(object):
         # read one set of files to get #channels
         self.channel_num = 0
         for f in self.file_list[0]:
-            self.channel_num += utils.get_img_channel_num(f)
+            self.channel_num += ersa_utils.get_img_channel_num(f)
         if self.chan_mean is None:
             self.chan_mean = np.zeros(self.channel_num - self.gt_dim)
 
@@ -51,7 +51,7 @@ class DataReaderSegmentation(object):
         """
         data_block = []
         for f in files:
-            data_block.append(utils.load_file(f))
+            data_block.append(ersa_utils.load_file(f))
         data_block = np.dstack(data_block)
         for aug_func in self.aug_func:
             data_block = aug_func(data_block)
@@ -152,7 +152,7 @@ class DataReaderSegmentationTrainValid(object):
         # read one set of files to get #channels
         self.channel_num = 0
         for f in self.file_list_train[0]:
-            self.channel_num += utils.get_img_channel_num(f)
+            self.channel_num += ersa_utils.get_img_channel_num(f)
         if self.chan_mean is None:
             self.chan_mean = np.zeros(self.channel_num - self.gt_dim)
 
@@ -167,7 +167,7 @@ class DataReaderSegmentationTrainValid(object):
         """
         data_block = []
         for f in files:
-            data_block.append(utils.load_file(f))
+            data_block.append(ersa_utils.load_file(f))
         data_block = np.dstack(data_block)
         if is_train:
             for aug_func in self.aug_func:
@@ -283,7 +283,7 @@ class DataReaderSegmentationTesting(DataReaderSegmentation):
         # patchify the data here
         data_block = []
         for f in file:
-            data_block.append(utils.load_file(f))
+            data_block.append(ersa_utils.load_file(f))
         data_block = np.dstack(data_block)
         grid_list = pe.make_grid((self.tile_size[0] + self.pad * 2, self.tile_size[1] + self.pad * 2),
                                  self.input_size, self.overlap)
