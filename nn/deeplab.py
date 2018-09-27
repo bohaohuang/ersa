@@ -38,9 +38,10 @@ class DeepLab(basicNetwork.SegmentationNetwork):
 
         self.encoding = self.build_encoder(feature)
         self.pred = self.build_decoder(self.encoding)
+        self.pred = tf.image.resize_bilinear(self.pred, self.input_size)
         self.output_size = self.pred.shape[1:3]
 
-        self.output = tf.image.resize_bilinear(tf.nn.softmax(self.pred), self.input_size)
+        self.output = tf.nn.softmax(self.pred)
 
     def build_encoder(self, feature):
         print("-----------build encoder-----------")

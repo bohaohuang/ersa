@@ -36,8 +36,15 @@ class ValueSummaryHook(Hook):
         self.val_names = value_names
         self.val_num = len(value)
         self.summary_op = []
+        self.valid_iou_cnt = -1  # for iou count
         for cnt in range(self.val_num):
-            self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.value[cnt]))
+            if len(self.value[cnt].shape) == 1:
+                # it's iou
+                self.valid_iou = tf.placeholder(tf.float32, [])
+                self.valid_iou_cnt = cnt
+                self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.valid_iou))
+            else:
+                self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.value[cnt]))
         if print_val is None:
             self.print_val = range(self.val_num)
         else:
@@ -63,8 +70,15 @@ class ValueSummaryHook(Hook):
         if step % self.verb_step == 0:
             val_mean = np.zeros(self.val_num)
             for _ in range(self.run_time):
-                for cnt in range(len(self.value)):
-                    val_mean[cnt] += sess.run(self.value[cnt])
+                try:
+                    for cnt in range(len(self.value)):
+                        val_tmp = sess.run(self.value[cnt])
+                        if len(val_tmp.shape) == 1:
+                            # it's iou
+                            val_tmp = val_tmp[0] / val_tmp[1]
+                        val_mean[cnt] += val_tmp
+                except tf.errors.OutOfRangeError:
+                    break
             value = val_mean / self.run_time
             print_value = [value[x] for x in self.print_val]
             if not self.log_time:
@@ -75,7 +89,10 @@ class ValueSummaryHook(Hook):
                 self.time = curr_time
             if summary_writer is not None:
                 for cnt, s in enumerate(self.summary_op):
-                    summary = sess.run(s, feed_dict={self.value[cnt]: val_mean[cnt]})
+                    if cnt == self.valid_iou_cnt:
+                        summary = sess.run(s, feed_dict={self.valid_iou: val_mean[cnt]})
+                    else:
+                        summary = sess.run(s, feed_dict={self.value[cnt]: val_mean[cnt]})
                     summary_writer.add_summary(summary, step)
                 summary_writer.flush()
 
@@ -159,7 +176,10 @@ class IoUSummaryHook(Hook):
         if step % self.verb_step == 0:
             val_mean = np.zeros(2)
             for _ in range(self.run_time):
+                try:
                     val_mean += sess.run(self.value)
+                except tf.errors.OutOfRangeError:
+                    break
             value = val_mean / self.run_time
             iou = value[0] / value[1]
             if not self.log_time:

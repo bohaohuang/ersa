@@ -331,8 +331,9 @@ class SegmentationNetwork(Network):
 
                     # validation
                     print('Eval @ Epoch {} '.format(epoch), end='')
-                    sess.run([valid_init, self.train_op[False]])
+                    sess.run([self.train_op[False]])
                     for hook in valid_hooks:
+                        sess.run(valid_init)
                         hook.run(global_step, sess, summary_writer)
             finally:
                 saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=1)
