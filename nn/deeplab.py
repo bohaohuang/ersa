@@ -28,11 +28,10 @@ class DeepLab(basicNetwork.SegmentationNetwork):
         super().__init__(class_num, input_size, dropout_rate, name, suffix, learn_rate, decay_step,
                          decay_rate, epochs, batch_size)
 
-    def create_graph(self, feature, start_filter_num):
+    def create_graph(self, feature, **kwargs):
         """
-        Create graph for the U-Net
+        Create graph for the deeplab
         :param feature: input image
-        :param start_filter_num: #filters at the start layer, #filters in U-Net grows exponentially
         :return:
         """
         self.input_size = feature.shape[1:3]

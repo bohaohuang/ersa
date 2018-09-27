@@ -18,10 +18,30 @@ def image_flipping(img):
     :param img: input image
     :return:flipped images
     """
-    v_flip = np.random.randint(0, 1)
+    img = image_flipping_hori(img)
+    img = image_flipping_vert(img)
+    return img
+
+
+def image_flipping_hori(img):
+    """
+        randomly flips images left-right
+        :param img: input image
+        :return:flipped images
+        """
     h_flip = np.random.randint(0, 1)
-    if v_flip == 1:
-        img = img[::-1, :, :]
     if h_flip == 1:
         img = img[:, ::-1, :]
+    return img
+
+
+def image_flipping_vert(img):
+    """
+        randomly flips images up-down
+        :param img: input image
+        :return:flipped images
+        """
+    v_flip = np.random.randint(0, 1)
+    if v_flip == 1:
+        img = img[::-1, :, :]
     return img

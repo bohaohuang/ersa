@@ -119,8 +119,8 @@ class Network(object):
                 self.optimizer = tf.train.AdamOptimizer(self.lr_op).minimize(self.loss, global_step=self.global_step,
                                                                              var_list=var_list)
 
-    def compile(self, feature, label, n_train, n_valid, patch_size, ckdir, train_var_filter=None, par_dir=None,
-                **kwargs):
+    def compile(self, feature, label, n_train, n_valid, patch_size, ckdir, train_var_filter=None,
+                val_mult=1, par_dir=None, **kwargs):
         self.make_loss(**kwargs)
         self.make_learning_rate(n_train)
         self.make_update_ops(feature, label)
@@ -131,7 +131,7 @@ class Network(object):
         self.n_valid = n_valid
 
     @staticmethod
-    def load(model_path, sess, saver=None, epoch=None, best_model=False):
+    def load(model_path, sess=None, saver=None, epoch=None, best_model=False):
         """
         this can only be called after create_graph()
         loads all weights in a graph
@@ -142,6 +142,9 @@ class Network(object):
         :param best_model: if not None, it will load the model with 'best' prefix
         :return:
         """
+        if sess is None:
+            # create sess if not given
+            sess = tf.Session()
         if saver is None:
             # create a saver if not given
             saver = tf.train.Saver(var_list=tf.global_variables())
@@ -181,6 +184,7 @@ class Network(object):
         else:
             saver.restore(sess, model_path)
             print('loaded {}'.format(model_path))
+        sess.close()
 
     @staticmethod
     def get_unique_name(name, suffix):
@@ -278,8 +282,8 @@ class SegmentationNetwork(Network):
                 # https://github.com/ailias/Focal-Loss-implement-on-Tensorflow/blob/master/focal_loss.py
                 self.loss = None
 
-    def compile(self, feature, label, n_train, n_valid, patch_size, ckdir, train_var_filter=None, par_dir=None,
-                **kwargs):
+    def compile(self, feature, label, n_train, n_valid, patch_size, ckdir, train_var_filter=None,
+                val_mult=1, par_dir=None, **kwargs):
         self.make_loss(label, loss_type=kwargs['loss_type'])
         self.make_learning_rate(n_train)
         self.make_update_ops(feature, label)
@@ -287,7 +291,7 @@ class SegmentationNetwork(Network):
         self.make_ckdir(ckdir, patch_size, par_dir)
         self.config = tf.ConfigProto(allow_soft_placement=True)
         self.n_train = n_train
-        self.n_valid = n_valid
+        self.n_valid = n_valid // val_mult // self.bs
 
     def train(self, train_hooks, valid_hooks=None, train_init=None, valid_init=None, continue_dir=None):
         """

@@ -118,7 +118,7 @@ class DataReaderSegmentation(object):
 
 class DataReaderSegmentationTrainValid(object):
     def __init__(self, input_size, file_list_train, file_list_valid, batch_size=5, chan_mean=None, aug_func=None,
-                 random=True, has_gt=True, gt_dim=0, include_gt=True, valid_mult=1):
+                 random=True, has_gt=True, gt_dim=0, include_gt=True, valid_mult=1, global_func=None):
         """
         Initialize a data reader for segmentation model where the lable is a densely labeled map
         This data reader separates training data and validation data for you
@@ -133,6 +133,7 @@ class DataReaderSegmentationTrainValid(object):
         :param gt_dim: how many 3rd dimension the input data has
         :param include_gt: reads gt or not
         :param valid_mult: validation can have a batch size of valid_mult*batch_size due to the absence of backprop
+        :param global_func: function applied to both rgb and gt
         """
         self.input_size = input_size
         self.file_list_train = file_list_train
@@ -143,7 +144,12 @@ class DataReaderSegmentationTrainValid(object):
             aug_func = []
         if type(aug_func) is not list:
             aug_func = [aug_func]
+        if global_func is None:
+            global_func = []
+        if type(global_func) is not list:
+            global_func = [global_func]
         self.aug_func = aug_func
+        self.global_func = global_func
         self.random = random
         self.has_gt = has_gt
         self.gt_dim = gt_dim
@@ -169,6 +175,8 @@ class DataReaderSegmentationTrainValid(object):
         for f in files:
             data_block.append(ersa_utils.load_file(f))
         data_block = np.dstack(data_block)
+        for aug_func in self.global_func:
+            data_block = aug_func(data_block)
         if is_train:
             for aug_func in self.aug_func:
                 data_block = aug_func(data_block)
