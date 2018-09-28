@@ -16,5 +16,6 @@
 - [ ] Neural Network
     - [X] model.train
     - [X] model.eval
-    - [ ] Re-exam model.train
-- [ ] Utils
+    - [X] Re-exam model.train
+    - [ ] Valid image definition should be inside hook function
+- [X] Utils

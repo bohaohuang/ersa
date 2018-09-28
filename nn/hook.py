@@ -15,7 +15,8 @@ class ValueSummaryHook(Hook):
     """
     This hook is used to print/write value of given variables every few steps
     """
-    def __init__(self, verb_step, value, value_names, print_val=None, cust_str='', log_time=False, run_time=1):
+    def __init__(self, verb_step, value, value_names, print_val=None, cust_str='', log_time=False, run_time=1,
+                 iou_pos=-1):
         """
         Initialize the hook variable
         :param verb_step: #steps between two print/write operation
@@ -36,15 +37,14 @@ class ValueSummaryHook(Hook):
         self.val_names = value_names
         self.val_num = len(value)
         self.summary_op = []
-        self.valid_iou_cnt = -1  # for iou count
+        self.iou_pos = iou_pos  # for iou count
+        self.pre_run = None
         for cnt in range(self.val_num):
-            if len(self.value[cnt].shape) == 1:
+            if cnt == iou_pos:
                 # it's iou
-                self.valid_iou = tf.placeholder(tf.float32, [])
-                self.valid_iou_cnt = cnt
-                self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.valid_iou))
-            else:
-                self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.value[cnt]))
+                self.pre_run = self.value[cnt][1]
+                self.value[cnt] = self.value[cnt][0]
+            self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.value[cnt]))
         if print_val is None:
             self.print_val = range(self.val_num)
         else:
@@ -71,12 +71,12 @@ class ValueSummaryHook(Hook):
             val_mean = np.zeros(self.val_num)
             for _ in range(self.run_time):
                 try:
+                    if self.pre_run is None:
+                        val_tmp = sess.run(self.value)
+                    else:
+                        _, val_tmp = sess.run([self.pre_run, self.value])
                     for cnt in range(len(self.value)):
-                        val_tmp = sess.run(self.value[cnt])
-                        if len(val_tmp.shape) == 1:
-                            # it's iou
-                            val_tmp = val_tmp[0] / val_tmp[1]
-                        val_mean[cnt] += val_tmp
+                        val_mean[cnt] += val_tmp[cnt]
                 except tf.errors.OutOfRangeError:
                     break
             value = val_mean / self.run_time
@@ -85,14 +85,11 @@ class ValueSummaryHook(Hook):
                 print(self.cust_str.format(step, *print_value))
             else:
                 curr_time = time.time()
-                print(self.cust_str.format(step, *print_value, curr_time-self.time))
+                print(self.cust_str.format(step, *print_value, curr_time - self.time))
                 self.time = curr_time
             if summary_writer is not None:
                 for cnt, s in enumerate(self.summary_op):
-                    if cnt == self.valid_iou_cnt:
-                        summary = sess.run(s, feed_dict={self.valid_iou: val_mean[cnt]})
-                    else:
-                        summary = sess.run(s, feed_dict={self.value[cnt]: val_mean[cnt]})
+                    summary = sess.run(s, feed_dict={self.value[cnt]: value[cnt]})
                     summary_writer.add_summary(summary, step)
                 summary_writer.flush()
 
@@ -101,7 +98,7 @@ class ImageValidSummaryHook(Hook):
     """
     Record validation image in tensorboard
     """
-    def __init__(self, verb_step, value, feature, label, pred, summary_func,
+    def __init__(self, input_size, verb_step, feature, label, pred, summary_func, value=None,
                  name='Validation_Image', max_output=5, img_mean=np.zeros(3)):
         """
         Initialize the object
@@ -115,6 +112,13 @@ class ImageValidSummaryHook(Hook):
         :param max_output: maximum number of images to show in the tensorboard
         :param img_mean:
         """
+        if value is None:
+            name='valid_images'
+            if int(input_size[1]) / int(input_size[0]) > 1.5:
+                # if image is too wide, concatenate them horizontally
+                value = tf.placeholder(tf.uint8, shape=[None, input_size[0] * 3, input_size[1], 3], name=name)
+            else:
+                value = tf.placeholder(tf.uint8, shape=[None, input_size[0], input_size[1] * 3, 3], name=name)
         self.value = value
         self.summary_op = tf.summary.image(name, self.value, max_outputs=max_output)
         self.feature = feature

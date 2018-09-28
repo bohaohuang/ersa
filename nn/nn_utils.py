@@ -319,7 +319,13 @@ def image_summary(image, truth, prediction, img_mean=np.array((0, 0, 0), dtype=n
 
     pred_labels = get_pred_labels(prediction)
     pred_img = decode_labels(pred_labels, label_num)
-    return np.concatenate([image+img_mean, truth_img, pred_img], axis=2)
+
+    _, h, w, _ = image.shape
+    if w/h > 1.5:
+        # concatenate image horizontally if it is too wide
+        return np.concatenate([image+img_mean, truth_img, pred_img], axis=1)
+    else:
+        return np.concatenate([image + img_mean, truth_img, pred_img], axis=2)
 
 
 def tf_warn_level(warn_level=3):

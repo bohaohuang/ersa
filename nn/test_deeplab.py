@@ -18,9 +18,9 @@ bs = 5
 ds_name = 'Inria'
 suffix = 'test'
 sfn = 32
-n_train = 8000
+n_train = 100#8000
 valid_mult = 5
-n_valid = 1000//bs//valid_mult
+n_valid = 100#1000//bs//valid_mult
 gpu = 0
 verb_step = 200
 save_epoch = 5
@@ -59,18 +59,18 @@ train_init_op, valid_init_op, reader_op = \
         random=True, has_gt=True, gt_dim=1, include_gt=True, valid_mult=valid_mult).read_op()
 feature, label = reader_op
 
-unet.create_graph(feature, sfn)
+unet.create_graph(feature)
 unet.compile(feature, label, n_train, n_valid, patch_size, ersaPath.PATH['model'], par_dir='test', loss_type='xent')
 train_hook = hook.ValueSummaryHook(verb_step, [unet.loss, unet.lr_op], value_names=['train_loss', 'learning_rate'],
                                    print_val=[0])
 model_save_hook = hook.ModelSaveHook(unet.get_epoch_step()*save_epoch, unet.ckdir)
-valid_loss_hook = hook.ValueSummaryHook(unet.get_epoch_step(), [unet.loss],
-                                        value_names=['valid_loss'], log_time=True, run_time=unet.n_valid)
-valid_iou_hook = hook.IoUSummaryHook(unet.get_epoch_step(), unet.loss_iou, log_time=True, run_time=unet.n_valid,
-                                     cust_str='\t')
-image_hook = hook.ImageValidSummaryHook(unet.get_epoch_step(), unet.valid_images, feature, label, unet.pred,
+valid_loss_hook = hook.ValueSummaryHook(unet.get_epoch_step(), [unet.loss, unet.loss_iou],
+                                        value_names=['valid_loss', 'valid_iou'], log_time=True, run_time=unet.n_valid, iou_pos=1)
+'''valid_iou_hook = hook.IoUSummaryHook(unet.get_epoch_step(), unet.loss_iou, log_time=True, run_time=unet.n_valid,
+                                     cust_str='\t')'''
+image_hook = hook.ImageValidSummaryHook(unet.input_size, unet.get_epoch_step(), feature, label, unet.pred,
                                         nn_utils.image_summary, img_mean=chan_mean)
 start_time = time.time()
-unet.train(train_hooks=[train_hook, model_save_hook], valid_hooks=[valid_loss_hook, valid_iou_hook, image_hook],
+unet.train(train_hooks=[train_hook, model_save_hook], valid_hooks=[valid_loss_hook, image_hook],
            train_init=train_init_op, valid_init=valid_init_op)
 print('Duration: {:.3f}'.format((time.time() - start_time)/3600))

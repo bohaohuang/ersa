@@ -245,8 +245,9 @@ class SegmentationNetwork(Network):
         """
         self.loss_iou = None  # segmentation network uses IoU for a measurement
         self.valid_iou = tf.placeholder(tf.float32, [], name='val_iou')
-        self.valid_images = tf.placeholder(tf.uint8, shape=[None, input_size[0], input_size[1] * 3, 3],
-                                           name='validation_images')
+        '''self.valid_images = tf.placeholder(tf.uint8, shape=[None, input_size[0], input_size[1] * 3, 3],
+                                           name='validation_images')'''
+        self.input_size = input_size
         super().__init__(class_num, dropout_rate, name, suffix, learn_rate, decay_step, decay_rate,
                          epochs, batch_size)
 
@@ -269,11 +270,7 @@ class SegmentationNetwork(Network):
             prediction = tf.gather(pred_flat, indices)
 
             pred = tf.argmax(prediction, axis=-1, output_type=tf.int32)
-            intersect = tf.cast(tf.reduce_sum(gt * pred), tf.float32)
-            a = tf.cast(tf.reduce_sum(gt), tf.float32)
-            b = tf.cast(tf.reduce_sum(pred), tf.float32)
-            union = a + b - intersect
-            self.loss_iou = tf.convert_to_tensor([intersect, union])
+            self.loss_iou = tf.metrics.mean_iou(labels=gt, predictions=pred, num_classes=self.class_num)
 
             if loss_type == 'xent':
                 self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))

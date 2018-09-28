@@ -1,3 +1,6 @@
+"""
+Thif file copies the code from https://github.com/tensorflow/models/tree/master/research/deeplab
+"""
 import tensorflow as tf
 from nn import basicNetwork
 
@@ -78,6 +81,21 @@ class DeepLab(basicNetwork.SegmentationNetwork):
             outputs = self._aspp(encoding, self.class_num, [6, 12, 18, 24])
             print("after aspp block:", outputs.shape)
             return outputs
+
+    def load_resnet(self, resnet_dir):
+        """
+        Load the resnet101 model pretrained on ImageNet
+        :param resnet_dir: path to the pretrained model
+        :return:
+        """
+        with tf.Session(config=self.config) as sess:
+            # init model
+            init = [tf.global_variables_initializer(), tf.local_variables_initializer()]
+            sess.run(init)
+            restore_var = [v for v in tf.global_variables() if 'resnet_v1' in v.name and not 'Adam' in v.name]
+            loader = tf.train.Saver(var_list=restore_var)
+            # load model
+            self.load(resnet_dir, sess, loader)
 
     def _start_block(self, name, feature):
         outputs = self._conv2d(feature, 7, 64, 2, name=name)
