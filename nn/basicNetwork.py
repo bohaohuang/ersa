@@ -142,9 +142,11 @@ class Network(object):
         :param best_model: if not None, it will load the model with 'best' prefix
         :return:
         """
+        close_sess_flag = False
         if sess is None:
-            # create sess if not given
+            # create sess if not given, remember to close it
             sess = tf.Session()
+            close_sess_flag = True
         if saver is None:
             # create a saver if not given
             saver = tf.train.Saver(var_list=tf.global_variables())
@@ -160,7 +162,6 @@ class Network(object):
                 else:
                     try:
                         # try load latest model directly
-                        print(model_path)
                         latest_check_point = tf.train.latest_checkpoint(model_path)
                         saver.restore(sess, latest_check_point)
                         print('loaded {}'.format(latest_check_point))
@@ -184,7 +185,10 @@ class Network(object):
         else:
             saver.restore(sess, model_path)
             print('loaded {}'.format(model_path))
-        sess.close()
+
+        if close_sess_flag:
+            # close the session if it is created here
+            sess.close()
 
     @staticmethod
     def get_unique_name(name, suffix):

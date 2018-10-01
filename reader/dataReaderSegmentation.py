@@ -7,7 +7,7 @@ from preprocess import patchExtractor as pe
 
 class DataReaderSegmentation(object):
     def __init__(self, input_size, file_list, batch_size=5, chan_mean=None, aug_func=None, is_train=True, random=True,
-                 has_gt=True, gt_dim=0, include_gt=True):
+                 has_gt=True, gt_dim=0, include_gt=True, global_func=None):
         """
         Initialize a data reader for segmentation model where the lable is a densely labeled map
         :param input_size: patch size to be read
@@ -20,6 +20,7 @@ class DataReaderSegmentation(object):
         :param has_gt: the input file list has ground truth or not
         :param gt_dim: how many 3rd dimension the input data has
         :param include_gt: reads gt or not
+        :param global_func: function applied to both rgb and gt
         """
         self.input_size = input_size
         self.file_list = file_list
@@ -30,6 +31,11 @@ class DataReaderSegmentation(object):
         if type(aug_func) is not list:
             aug_func = [aug_func]
         self.aug_func = aug_func
+        if global_func is None:
+            global_func = []
+        if type(global_func) is not list:
+            global_func = [global_func]
+        self.global_func = global_func
         self.is_train = is_train
         self.random = random
         self.has_gt = has_gt
@@ -53,6 +59,8 @@ class DataReaderSegmentation(object):
         for f in files:
             data_block.append(ersa_utils.load_file(f))
         data_block = np.dstack(data_block)
+        for aug_func in self.global_func:
+            data_block = aug_func(data_block)
         for aug_func in self.aug_func:
             data_block = aug_func(data_block)
         if self.has_gt:
