@@ -756,7 +756,7 @@ class PSPNet(basicNetwork.SegmentationNetwork):
     """
     Implements the Deeplab from https://arxiv.org/pdf/1706.05587.pdf
     """
-    def __init__(self, class_num, input_size, dropout_rate=None, name='deeplab', suffix='', learn_rate=1e-5,
+    def __init__(self, class_num, input_size, dropout_rate=None, name='pspnet', suffix='', learn_rate=1e-5,
                  decay_step=40, decay_rate=0.1, epochs=100, batch_size=5, weight_decay=1e-4, momentum=0.9):
         """
         Initialize the object

@@ -250,18 +250,19 @@ class DataReaderSegmentationTrainValid(object):
         Get tf iterator as well as init operation for the dataset
         :return: reader operation and init operation
         """
-        dataset_train, dataset_valid = self.get_dataset()
-        dataset_train = dataset_train.repeat()
-        dataset_train = dataset_train.batch(self.batch_size)
+        with tf.device('/cpu:0'):
+            dataset_train, dataset_valid = self.get_dataset()
+            dataset_train = dataset_train.repeat()
+            dataset_train = dataset_train.batch(self.batch_size)
 
-        dataset_valid = dataset_valid.batch(self.batch_size * self.valid_mult)
+            dataset_valid = dataset_valid.batch(self.batch_size * self.valid_mult)
 
-        iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
-        reader_op = iterator.get_next()
-        train_init_op = iterator.make_initializer(dataset_train)
-        valid_init_op = iterator.make_initializer(dataset_valid)
+            iterator = tf.data.Iterator.from_structure(dataset_train.output_types, dataset_train.output_shapes)
+            reader_op = iterator.get_next()
+            train_init_op = iterator.make_initializer(dataset_train)
+            valid_init_op = iterator.make_initializer(dataset_valid)
 
-        return train_init_op, valid_init_op, reader_op
+            return train_init_op, valid_init_op, reader_op
 
 
 class DataReaderSegmentationTesting(DataReaderSegmentation):

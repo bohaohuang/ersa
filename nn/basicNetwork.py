@@ -304,7 +304,7 @@ class SegmentationNetwork(Network):
         :param continue_dir: if not None, continue training with the previous step & epoch number
         :return:
         """
-        with tf.Session() as sess:
+        with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
             summary_writer = tf.summary.FileWriter(self.ckdir, sess.graph)
 
             if continue_dir is not None and os.path.exists(continue_dir):

@@ -70,7 +70,7 @@ def mean_IU(eval_segm, gt_segm, ignore_label=()):
     check_size(eval_segm, gt_segm)
 
     cl, n_cl = union_classes(eval_segm, gt_segm, ignore_label)
-    _, n_cl_gt = extract_classes(gt_segm)
+    _, n_cl_gt = extract_classes(gt_segm, ignore_label)
     eval_mask, gt_mask = extract_both_masks(eval_segm, gt_segm, cl, n_cl)
 
     IU = list([0]) * n_cl
@@ -92,14 +92,14 @@ def mean_IU(eval_segm, gt_segm, ignore_label=()):
     return mean_IU_
 
 
-def frequency_weighted_IU(eval_segm, gt_segm):
+def frequency_weighted_IU(eval_segm, gt_segm, ignore_label):
     """
     sum_k(t_k)^(-1) * sum_i((t_i*n_ii)/(t_i + sum_j(n_ji) - n_ii))
     """
 
     check_size(eval_segm, gt_segm)
 
-    cl, n_cl = union_classes(eval_segm, gt_segm)
+    cl, n_cl = union_classes(eval_segm, gt_segm, ignore_label)
     eval_mask, gt_mask = extract_both_masks(eval_segm, gt_segm, cl, n_cl)
 
     frequency_weighted_IU_ = list([0]) * n_cl
@@ -137,16 +137,17 @@ def extract_both_masks(eval_segm, gt_segm, cl, n_cl):
     return eval_mask, gt_mask
 
 
-def extract_classes(segm):
+def extract_classes(segm, ignore_label=()):
     cl = np.unique(segm)
+    cl = np.array([c for c in cl if c not in ignore_label])
     n_cl = len(cl)
 
     return cl, n_cl
 
 
 def union_classes(eval_segm, gt_segm, ignore_label=()):
-    eval_cl, _ = extract_classes(eval_segm)
-    gt_cl, _ = extract_classes(gt_segm)
+    eval_cl, _ = extract_classes(eval_segm, ignore_label)
+    gt_cl, _ = extract_classes(gt_segm, ignore_label)
 
     cl = np.union1d(eval_cl, gt_cl)
     cl = np.array([c for c in cl if c not in ignore_label])

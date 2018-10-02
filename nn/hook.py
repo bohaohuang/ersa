@@ -220,4 +220,4 @@ class ModelSaveHook(Hook):
         :return:
         """
         if step % self.verb_step == 0:
-            self.saver.save(sess, '{}/model_{}.ckpt'.format(self.ckdir, step), global_step=step)
+            self.saver.save(sess, '{}/model_{}.ckpt'.format(self.ckdir, step // self.verb_step), global_step=step)
