@@ -1,4 +1,6 @@
+import skimage.transform
 import numpy as np
+import ersa_utils
 
 
 def image_rotating(img):
@@ -37,11 +39,91 @@ def image_flipping_hori(img):
 
 def image_flipping_vert(img):
     """
-        randomly flips images up-down
-        :param img: input image
-        :return:flipped images
-        """
+    randomly flips images up-down
+    :param img: input image
+    :return:flipped images
+    """
     v_flip = np.random.randint(0, 1)
     if v_flip == 1:
         img = img[::-1, :, :]
+    return img
+
+
+def image_scaling_with_label(img, rescale=True):
+    """
+    Random scale images, assume the last channel is the label
+    Resize the rgb part with bilinear interpolation, the label part with nearest neighbor
+    :param img: image data cube, the last channel is the label
+    :param rescale: if True, the image and label will be rescaled to the original shape
+    :return: rescaled image
+    """
+    ftr = img[:, :, :-1]
+    lbl = img[:, :, -1]
+    scale = np.random.uniform(low=0.5, high=2.0)
+    h, w = ftr.shape[:2]
+    h_new = int(h * scale)
+    w_new = int(w * scale)
+    ftr = skimage.transform.resize(ftr, (h_new, w_new), mode='reflect')
+    lbl = np.expand_dims(skimage.transform.resize(lbl, (h_new, w_new), order=0,
+                                                  preserve_range=True, mode='reflect'), axis=-1)
+    img = np.dstack([ftr, lbl])
+    img = random_pad_crop_image_with_label(img, (h, w))
+
+    return img
+
+
+def random_crop(img, h_target, w_target):
+    """
+    Random crop the image to the target size
+    :param img: image to be cropped
+    :param h_target: target height
+    :param w_target: target width
+    :return: random cropped image
+    """
+    h, w, _ = img.shape
+    h_range = h - h_target
+    w_range = w - w_target
+    if h_range == 0:
+        h_start = 0
+    else:
+        h_start = np.random.randint(0, h_range)
+    if w_range == 0:
+        w_start = 0
+    else:
+        w_start = np.random.randint(0, w_range)
+    img = img[h_start:h_start+h_target, w_start:w_start+w_target, :]
+    return img
+
+
+def random_pad_crop_image_with_label(img, size, ignore_label=255):
+    """
+    Random pad or crop the image to the desired shape
+    :param img: the data cube, assume the label is at the last dimension
+    :param size: desired size of the image
+    :param ignore_label: label to be ignored
+    :return: image with the desired shape
+    """
+    img[:, :, -1] -= ignore_label  # padded zeros will eventually become the value of ignore label
+    h, w, _ = img.shape
+    pad_h0, pad_h1, pad_w0, pad_w1 = 0, 0, 0, 0
+    if size[0] > h:
+        # need padding
+        diff = size[0] - h
+        if diff % 2 == 0:
+            pad_h0, pad_h1 = diff // 2, diff // 2
+        else:
+            pad_h0 = diff // 2
+            pad_h1 = diff - pad_h0
+    if size[1] > w:
+        # need padding
+        diff = size[1] - w
+        if diff % 2 == 0:
+            pad_w0, pad_w1 = diff // 2, diff // 2
+        else:
+            pad_w0 = diff // 2
+            pad_w1 = diff - pad_w0
+    img = ersa_utils.pad_image(img, [pad_h0, pad_h1, pad_w0, pad_w1], mode='constant')
+
+    img = random_crop(img, size[0], size[1])
+    img[:, :, -1] += ignore_label
     return img

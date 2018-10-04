@@ -131,24 +131,25 @@ def rotate_list(l):
     return list(map(list, zip(*l)))
 
 
-def pad_image(img, pad):
+def pad_image(img, pad, mode='reflect'):
     """
     Symmetric pad pixels around images
     :param img: image to pad
     :param pad: list of #pixels pad around the image, if it is a scalar, it will be assumed to pad same number
                 number of pixels around 4 directions
+    :param mode: padding mode
     :return: padded image
     """
     if type(pad) is not list:
         pad = [pad for i in range(4)]
     assert len(pad) == 4
     if len(img.shape) == 2:
-        return np.pad(img, ((pad[0], pad[1]), (pad[2], pad[3])), 'symmetric')
+        return np.pad(img, ((pad[0], pad[1]), (pad[2], pad[3])), mode)
     else:
         h, w, c = img.shape
         pad_img = np.zeros((h + pad[0] + pad[1], w + pad[2] + pad[3], c))
         for i in range(c):
-            pad_img[:, :, i] = np.pad(img[:, :, i], ((pad[0], pad[1]), (pad[2], pad[3])), 'symmetric')
+            pad_img[:, :, i] = np.pad(img[:, :, i], ((pad[0], pad[1]), (pad[2], pad[3])), mode)
     return pad_img
 
 

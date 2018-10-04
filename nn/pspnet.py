@@ -789,9 +789,9 @@ class PSPNet(basicNetwork.SegmentationNetwork):
 
         net = PSPNet101({'data': feature}, is_training=True, num_classes=self.class_num)
         self.pred = net.layers['conv6']
-        self.pred = tf.image.resize_bilinear(self.pred, self.input_size)
-        self.output_size = self.pred.shape[1:3]
-        self.output = tf.nn.softmax(self.pred)
+        pred = tf.image.resize_bilinear(self.pred, self.input_size)
+        self.output_size = pred.shape[1:3]
+        self.output = tf.nn.softmax(pred)
 
     def make_loss(self, label, loss_type='xent'):
         """
@@ -803,6 +803,7 @@ class PSPNet(basicNetwork.SegmentationNetwork):
         """
         with tf.variable_scope('loss'):
             pred_flat = tf.reshape(self.pred, [-1, self.class_num])
+            label = tf.image.resize_nearest_neighbor(label, tf.stack(self.pred.get_shape()[1:3]))
             y_flat = tf.reshape(tf.squeeze(label, axis=[3]), [-1, ])
             indices = tf.squeeze(tf.where(tf.less_equal(y_flat, self.class_num - 1)), 1)
             gt = tf.gather(y_flat, indices)
