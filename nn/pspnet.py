@@ -852,10 +852,11 @@ class PSPNet(basicNetwork.SegmentationNetwork):
 
             self.optimizer = tf.group(train_op_conv, train_op_fc_w, train_op_fc_b)
 
-    def load_resnet(self, resnet_dir):
+    def load_resnet(self, resnet_dir, keep_last=False):
         """
         Load the resnet101 model pretrained on ImageNet
         :param resnet_dir: path to the pretrained model
+        :param keep_last: if keep last classification layer or not
         :return:
         """
         ckpt = tf.train.latest_checkpoint(resnet_dir)
@@ -863,7 +864,11 @@ class PSPNet(basicNetwork.SegmentationNetwork):
             # init model
             init = [tf.global_variables_initializer(), tf.local_variables_initializer()]
             sess.run(init)
-            restore_var = [v for v in tf.global_variables() if 'global_step' not in v.name and 'mode' not in v.name]
+            if keep_last:
+                restore_var = [v for v in tf.global_variables() if 'global_step' not in v.name and 'mode' not in v.name]
+            else:
+                restore_var = [v for v in tf.global_variables() if 'global_step' not in v.name and 'mode' not in v.name
+                               and 'conv6' not in v.name]
             loader = tf.train.Saver(var_list=restore_var)
             # load model
             self.load(ckpt, sess, loader)

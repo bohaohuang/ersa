@@ -202,13 +202,14 @@ class ModelSaveHook(Hook):
     """
     Save the model every few steps
     """
-    def __init__(self, verb_step, ckdir):
+    def __init__(self, verb_step, ckdir, max_to_keep=None):
         """
         Initialize the object
         :param verb_step: #steps between two print/write operation
         :param ckdir: checkpoint directory to save the model
+        :param max_to_keep: maximum number of ckpts to be saved
         """
-        self.saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=1)
+        self.saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=max_to_keep)
         self.ckdir = ckdir
         super().__init__(verb_step)
 

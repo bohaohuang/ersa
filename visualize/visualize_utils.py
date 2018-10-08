@@ -11,7 +11,6 @@ def compare_two_figure(img_1, img_2, show_axis=False, fig_size=(12, 6)):
     :return:
     """
     plt.figure(figsize=fig_size)
-    plt.rcParams['image.cmap'] = 'gray'
     ax1 = plt.subplot(121)
     plt.imshow(img_1)
     if not show_axis:

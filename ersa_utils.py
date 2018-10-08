@@ -3,7 +3,9 @@ import time
 import pickle
 import imageio
 import numpy as np
+import pandas as pd
 import matplotlib as plt
+from math import factorial
 from functools import wraps
 import ersaPath
 
@@ -207,3 +209,50 @@ def float2str(f):
     :return: changed string
     """
     return '{}'.format(f).replace('.', 'p')
+
+
+def savitzky_golay(y, window_size, order, deriv=0, rate=1):
+    """
+    Smooth the curve
+    :param y: signal curve to be smoothed
+    :param window_size: window size, the larger the smoother the curve will be
+    :param order: the larger the smoother the curve will be
+    :param deriv: the higher the smoother the curve will be
+    :param rate:
+    :return:
+    """
+    try:
+        window_size = np.abs(np.int(window_size))
+        order = np.abs(np.int(order))
+    except ValueError:
+        raise ValueError("window_size and order have to be of type int")
+    if window_size % 2 != 1 or window_size < 1:
+        raise TypeError("window_size size must be a positive odd number")
+    if window_size < order + 2:
+        raise TypeError("window_size is too small for the polynomials order")
+    order_range = range(order + 1)
+    half_window = (window_size - 1) // 2
+    # precompute coefficients
+    b = np.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
+    m = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
+    # pad the signal at the extremes with
+    # values taken from the signal itself
+    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
+    y = np.concatenate((firstvals, y, lastvals))
+    return np.convolve(m[::-1], y, mode='valid')
+
+
+def read_tensorboard_csv(file, window_size=11, order=2):
+    """
+    Read a csv file saved by tensorboard, do savitzky smoothing
+    :param file: full path to the csv file
+    :param window_size: window size of savitzky
+    :param order: order of savitzky
+    :return: step and value
+    """
+    fields = ['Step', 'Value']
+    df = pd.read_csv(file, skipinitialspace=True, usecols=fields)
+    value = savitzky_golay(np.array(df['Value']), window_size, order)
+    step = np.array(df['Step'])
+    return step, value
