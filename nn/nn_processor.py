@@ -15,7 +15,7 @@ class NNEstimatorSegment(processBlock.BasicProcess):
     """
     def __init__(self, model, file_list, input_size, tile_size, batch_size, img_mean, model_dir,
                  ds_name='default', save_result_parent_dir=None, name='nn_estimator_segment',
-                 gpu=None, verb=True, load_epoch_num=None, best_model=False, truth_val=1, score_result=False,
+                 gpu=None, verb=True, load_epoch_num=None, best_model=False, truth_val=1, score_results=False,
                  split_char='_', **kwargs
                  ):
         """
@@ -34,7 +34,7 @@ class NNEstimatorSegment(processBlock.BasicProcess):
         :param load_epoch_num: which epoch's ckpt to load
         :param best_model: if True, load the model with best performance on the validation set
         :param truth_val: value of H1 pixel in gt
-        :param score_result: if False, no gt used to score results
+        :param score_results: if False, no gt used to score results
         :param split_char: character used to split file name
         :param kwargs: other parameters
         """
@@ -55,7 +55,7 @@ class NNEstimatorSegment(processBlock.BasicProcess):
         self.load_epoch_num = load_epoch_num
         self.best_model = best_model
         self.truth_val = truth_val
-        self.score_results = score_result
+        self.score_results = score_results
         self.split_char = split_char
         self.kwargs = kwargs
 

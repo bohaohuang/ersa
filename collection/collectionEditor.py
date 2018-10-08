@@ -46,7 +46,8 @@ class SingleChanMult(processBlock.BasicProcess):
         assert len(file_list[0]) == 1
         pbar = tqdm(file_list)
         for img_file in pbar:
-            save_name = img_file[0].replace(self.field_ext_pair[0], self.field_ext_pair[1])
+            save_name = img_file[0].replace(''.join([a for a in self.field_ext_pair[0] if a != '.' and a != '*']),
+                                            self.field_ext_pair[1])
             if 'file_ext' in kwargs:
                 # user specified a new file extension
                 save_name = save_name.replace(save_name.split('.')[-1], kwargs['file_ext'])

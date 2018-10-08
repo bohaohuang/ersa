@@ -168,7 +168,8 @@ class Network(object):
                     except (tf.errors.NotFoundError, ValueError):
                         # path in ckpt file is not correct,
                         # load file name in model_path
-                        saver = tf.train.Saver(var_list=[i for i in tf.trainable_variables() if 'save' not in i.name])
+                        saver = tf.train.Saver(var_list=[i for i in tf.trainable_variables() if 'save' not in i.name
+                                                         and 'mode' not in i.name])
                         with open(os.path.join(model_path, 'checkpoint'), 'r') as f:
                             ckpts = f.readlines()
                         ckpt_file_name = ckpts[0].split('/')[-1].strip().strip('\"')

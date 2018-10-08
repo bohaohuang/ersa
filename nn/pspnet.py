@@ -863,8 +863,7 @@ class PSPNet(basicNetwork.SegmentationNetwork):
             # init model
             init = [tf.global_variables_initializer(), tf.local_variables_initializer()]
             sess.run(init)
-            restore_var = [v for v in tf.global_variables() if 'conv6' not in v.name and 'global_step' not in v.name
-                           and 'mode' not in v.name]
+            restore_var = [v for v in tf.global_variables() if 'global_step' not in v.name and 'mode' not in v.name]
             loader = tf.train.Saver(var_list=restore_var)
             # load model
             self.load(ckpt, sess, loader)
