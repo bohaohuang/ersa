@@ -1,4 +1,5 @@
 import os
+from glob import glob
 from tqdm import tqdm
 import rio_hist.match
 import ersa_utils
@@ -40,3 +41,12 @@ class HistMatching(processBlock.BasicProcess):
             rio_hist.match.hist_match_worker(files, self.ref_path, dst_path=tile_name, match_proportion=1,
                                              creation_options='',
                                              bands='1,2,3', color_space=self.color_space, plot=False)
+
+    def get_files(self):
+        """
+        return extracted files
+        :return:
+        """
+        files = sorted(glob(os.path.join(self.path, '*.*')))
+        files = [f for f in files if 'txt' not in f]
+        return files
