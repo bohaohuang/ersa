@@ -72,7 +72,7 @@ def load_file(file_name):
     try:
         if file_name[-3:] == 'npy':
             data = np.load(file_name)
-        elif file_name[-3:] == 'pkl':
+        elif file_name[-3:] == 'pkl' or file_name[-6:] == 'pickle':
             with open(file_name, 'rb') as f:
                 data = pickle.load(f)
         elif file_name[-3:] == 'txt':
