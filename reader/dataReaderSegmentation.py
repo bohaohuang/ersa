@@ -220,7 +220,7 @@ class DataReaderSegmentationTrainValid(object):
         """
         def generator_train(): return self.data_reader(self.file_list_train, True, self.random)
 
-        def generator_valid(): return self.data_reader(self.file_list_valid, False)
+        def generator_valid(): return self.data_reader(self.file_list_valid, False, self.random)
 
         if self.has_gt and self.include_gt:
             dataset_train = tf.data.Dataset.from_generator(generator_train, (tf.float32, tf.int32,),
