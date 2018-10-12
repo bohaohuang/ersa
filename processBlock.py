@@ -1,4 +1,5 @@
 import os
+import ersa_utils
 
 
 class BasicProcess(object):
@@ -67,3 +68,57 @@ class BasicProcess(object):
                 if a[0].strip() == 'Finished':
                     return True
         return False
+
+
+class ValueComputeProcess(BasicProcess):
+    """
+    Compute value for the given function, save value
+    Return the value if already exists
+    """
+    def __init__(self, name, path, save_path, func=None):
+        """
+        :param name:name of the process, this will be used for the state file name
+        :param path: path to where the state file will be stored
+        :param save_path: path to save the computed value
+        :param func: process function, if None then it will be child class's process() function
+        """
+        self.save_path = save_path
+        self.val = None
+        super().__init__(name, path, func)
+
+    def run(self, force_run=False, **kwargs):
+        """
+        Run the process
+        :param force_run: if True, then the process will run no matter it has completed before
+        :param kwargs:
+        :return:
+        """
+        # check if state file exists
+        state_exist = os.path.exists(self.state_file)
+        # run the function if force run or haven't run before
+        if force_run or state_exist == 0:
+            print(('Start running {}'.format(self.name)))
+            # write state log as incomplete
+            with open(self.state_file, 'w') as f:
+                f.write('Incomplete\n')
+
+            # run the process
+            self.val = self.func(**kwargs)
+
+            # write state log as complete
+            with open(self.state_file, 'w') as f:
+                f.write('Finished\n')
+            ersa_utils.save_file(self.save_path, self.val)
+        else:
+            # if haven't run before, run the process
+            if not self.check_finish():
+                self.val = self.func(**kwargs)
+                ersa_utils.save_file(self.save_path, self.val)
+
+            # if already exists, load the file
+            self.val = ersa_utils.load_file(self.save_path)
+
+            # write state log as complete
+            with open(self.state_file, 'w') as f:
+                f.write('Finished\n')
+        return self

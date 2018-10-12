@@ -274,13 +274,13 @@ class CollectionMaker(object):
         if is_gt:
             # do nothing if it already exists
             if field_ext_pair[1] == self.gt_ext:
-                print('{} already exits!')
+                print('{} already exits!'.format(field_ext_pair[1]))
                 return
             self.gt_ext = field_ext_pair[1]
             self.file_ext[-1] = new_file_ext
         else:
             if field_ext_pair[1] in self.rgb_ext:
-                print('{} already exits!')
+                print('{} already exits!'.format(field_ext_pair[1]))
                 return
             self.rgb_ext = [field_ext_pair[1] if ext == field_ext_pair[0] else ext for ext in self.rgb_ext]
             self.file_ext = [new_file_ext if self.rgb_ext[i] == field_ext_pair[0] else self.file_ext[i]
@@ -297,7 +297,7 @@ class CollectionMaker(object):
         :return:
         """
         if new_field_ext in self.rgb_ext:
-            print('{} already exits!')
+            print('{} already exits!'.format(new_field_ext))
             return
         new_file_ext = files[0].split('.')[-1]
         self.rgb_ext.append(new_field_ext)
