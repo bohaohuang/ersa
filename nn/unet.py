@@ -144,11 +144,12 @@ class UNet(basicNetwork.SegmentationNetwork):
             prediction = tf.gather(pred_flat, indices)
 
             pred = tf.argmax(prediction, axis=-1, output_type=tf.int32)
-            intersect = tf.cast(tf.reduce_sum(gt * pred), tf.float32)
+            '''intersect = tf.cast(tf.reduce_sum(gt * pred), tf.float32)
             a = tf.cast(tf.reduce_sum(gt), tf.float32)
             b = tf.cast(tf.reduce_sum(pred), tf.float32)
             union = a + b - intersect
-            self.loss_iou = tf.convert_to_tensor([intersect, union])
+            self.loss_iou = tf.convert_to_tensor([intersect, union])'''
+            self.loss_iou = tf.metrics.mean_iou(labels=gt, predictions=pred, num_classes=self.class_num)
 
             if loss_type == 'xent':
                 self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))
