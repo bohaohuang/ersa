@@ -15,8 +15,7 @@ class ValueSummaryHook(Hook):
     """
     This hook is used to print/write value of given variables every few steps
     """
-    def __init__(self, verb_step, value, value_names, print_val=None, cust_str='', log_time=False, run_time=1,
-                 iou_pos=-1):
+    def __init__(self, verb_step, value, value_names, print_val=None, cust_str='', log_time=False):
         """
         Initialize the hook variable
         :param verb_step: #steps between two print/write operation
@@ -37,14 +36,75 @@ class ValueSummaryHook(Hook):
         self.val_names = value_names
         self.val_num = len(value)
         self.summary_op = []
-        self.iou_pos = iou_pos  # for iou count
-        self.pre_run = None
         for cnt in range(self.val_num):
-            if cnt == iou_pos:
-                # it's iou
-                self.pre_run = self.value[cnt][1]
-                self.value[cnt] = self.value[cnt][0]
             self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.value[cnt]))
+        if print_val is None:
+            self.print_val = range(self.val_num)
+        else:
+            self.print_val = print_val
+        cust_str += 'Step {:d}'
+        for cnt in self.print_val:
+            cust_str += '\t' + self.val_names[cnt] + ' {:.3f}'
+        self.cust_str = cust_str
+        self.log_time = log_time
+        if self.log_time:
+            self.time = time.time()
+            self.cust_str += ', Duration: {:.3f}'
+        super().__init__(verb_step)
+
+    def run(self, step, sess, summary_writer=None):
+        """
+        :param step: The current global step number
+        :param sess: session to run the summary writer
+        :param summary_writer: summary writer
+        :return:
+        """
+        if step % self.verb_step == 0:
+            value = []
+            for cnt in range(len(self.value)):
+                value.append(sess.run(self.value[cnt]))
+            print_value = [value[x] for x in self.print_val]
+            if not self.log_time:
+                print(self.cust_str.format(step, *print_value))
+            else:
+                curr_time = time.time()
+                print(self.cust_str.format(step, *print_value, curr_time - self.time))
+                self.time = curr_time
+            if summary_writer is not None:
+                for cnt, s in enumerate(self.summary_op):
+                    summary = sess.run(s, feed_dict={self.value[cnt]: value[cnt]})
+                    summary_writer.add_summary(summary, step)
+                summary_writer.flush()
+
+
+class ValueSummaryHookIters(Hook):
+    """
+    This hook is used to print/write value of given variables every few steps over few iterations
+    This is useful for having stable values
+    """
+    def __init__(self, verb_step, value, value_names, print_val=None, cust_str='', log_time=False, run_time=1):
+        """
+        Initialize the hook variable
+        :param verb_step: #steps between two print/write operation
+        :param value: variable to be record, could be a list
+        :param value_names: names of the variables, should be the same length as value
+        :param print_val: which values will be print out, should be a list of indices of variables in value
+                          because sometimes you want sth recorded in tensorboard but not print them, like lr
+        :param cust_str: a customized appendix for the printout string
+        :param log_time: if True, it will print out duration between two self.run() is called
+        :param run_time: how many times to run the variable, this could be set to a large number when validation
+        """
+        if type(value) is not list:
+            value = [value]
+        self.value = value
+        if type(value_names) is not list:
+            value_names = [value_names]
+        assert len(value_names) == len(self.value)
+        self.val_names = value_names
+        self.val_num = len(value)
+        self.summary_op = []
+        for cnt in range(self.val_num):
+            self.summary_op.append(tf.summary.scalar(self.val_names[cnt], self.value[cnt][0]))
         if print_val is None:
             self.print_val = range(self.val_num)
         else:
@@ -68,18 +128,12 @@ class ValueSummaryHook(Hook):
         :return:
         """
         if step % self.verb_step == 0:
-            val_mean = np.zeros(self.val_num)
             for _ in range(self.run_time):
                 try:
-                    if self.pre_run is None:
-                        val_tmp = sess.run(self.value)
-                    else:
-                        _, val_tmp = sess.run([self.pre_run, self.value])
-                    for cnt in range(len(self.value)):
-                        val_mean[cnt] += val_tmp[cnt]
+                    sess.run([v[1] for v in self.value])
                 except tf.errors.OutOfRangeError:
                     break
-            value = val_mean / self.run_time
+            value = sess.run([v[0] for v in self.value])
             print_value = [value[x] for x in self.print_val]
             if not self.log_time:
                 print(self.cust_str.format(step, *print_value))
@@ -89,7 +143,7 @@ class ValueSummaryHook(Hook):
                 self.time = curr_time
             if summary_writer is not None:
                 for cnt, s in enumerate(self.summary_op):
-                    summary = sess.run(s, feed_dict={self.value[cnt]: value[cnt]})
+                    summary = sess.run(s, feed_dict={self.value[cnt][0]: value[cnt]})
                     summary_writer.add_summary(summary, step)
                 summary_writer.flush()
 

@@ -248,10 +248,9 @@ class SegmentationNetwork(Network):
         :param epochs: #epochs to train
         :param batch_size: batch size
         """
+        self.loss_xent = None
         self.loss_iou = None  # segmentation network uses IoU for a measurement
         self.valid_iou = tf.placeholder(tf.float32, [], name='val_iou')
-        '''self.valid_images = tf.placeholder(tf.uint8, shape=[None, input_size[0], input_size[1] * 3, 3],
-                                           name='validation_images')'''
         self.input_size = input_size
         super().__init__(class_num, dropout_rate, name, suffix, learn_rate, decay_step, decay_rate,
                          epochs, batch_size)
@@ -279,6 +278,7 @@ class SegmentationNetwork(Network):
 
             if loss_type == 'xent':
                 self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))
+                self.loss_xent = tf.metrics.mean(self.loss)
             else:
                 # TODO focal loss:
                 # https://github.com/ailias/Focal-Loss-implement-on-Tensorflow/blob/master/focal_loss.py
