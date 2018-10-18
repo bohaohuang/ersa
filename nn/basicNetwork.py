@@ -274,11 +274,16 @@ class SegmentationNetwork(Network):
             prediction = tf.gather(pred_flat, indices)
 
             pred = tf.argmax(prediction, axis=-1, output_type=tf.int32)
-            self.loss_iou = tf.metrics.mean_iou(labels=gt, predictions=pred, num_classes=self.class_num)
+            self.loss_iou = self.create_resetable_metric(tf.metrics.mean_iou, var_name='loss_iou',
+                                                         scope=tf.get_variable_scope().name,
+                                                         labels=gt, predictions=pred, num_classes=self.class_num,
+                                                         name='loss_iou')
 
             if loss_type == 'xent':
                 self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))
-                self.loss_xent = tf.metrics.mean(self.loss)
+                self.loss_xent = self.create_resetable_metric(tf.metrics.mean, var_name='loss_xent',
+                                                              scope=tf.get_variable_scope().name,
+                                                              values=self.loss, name='loss_xent')
             else:
                 # TODO focal loss:
                 # https://github.com/ailias/Focal-Loss-implement-on-Tensorflow/blob/master/focal_loss.py
@@ -386,3 +391,18 @@ class SegmentationNetwork(Network):
         :return:
         """
         return 0
+
+    @staticmethod
+    def create_resetable_metric(metric, var_name, scope=tf.get_variable_scope().name, **kwargs):
+        """
+        Create resetable operations for a streaming metric
+        :param metric: streaming metric function
+        :param var_name: name of the metric variable
+        :param scope: default to current scope name
+        :param kwargs:
+        :return:
+        """
+        metric_op, update_op = metric(**kwargs)
+        vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='{}/{}'.format(scope, var_name))
+        reset_op = tf.variables_initializer(vars)
+        return metric_op, update_op, reset_op

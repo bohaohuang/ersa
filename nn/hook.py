@@ -118,6 +118,7 @@ class ValueSummaryHookIters(Hook):
             self.time = time.time()
             self.cust_str += ', Duration: {:.3f}'
         self.run_time = run_time
+        self.reset_op = [v[2] for v in self.value]
         super().__init__(verb_step)
 
     def run(self, step, sess, summary_writer=None):
@@ -128,6 +129,7 @@ class ValueSummaryHookIters(Hook):
         :return:
         """
         if step % self.verb_step == 0:
+            sess.run(self.reset_op)
             for _ in range(self.run_time):
                 try:
                     sess.run([v[1] for v in self.value])
