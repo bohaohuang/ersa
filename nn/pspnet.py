@@ -818,6 +818,7 @@ class PSPNet(basicNetwork.SegmentationNetwork):
                 l2_losses = [self.weight_decay * tf.nn.l2_loss(v) for v in tf.trainable_variables()
                              if 'weight' in v.name]
                 self.loss = tf.reduce_mean(loss) + tf.add_n(l2_losses)
+                self.loss_xent = tf.metrics.mean(self.loss)
 
     def make_optimizer(self, train_var_filter):
         """
