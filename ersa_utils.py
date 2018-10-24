@@ -83,7 +83,7 @@ def load_file(file_name):
 
         return data
     except Exception:  # so many things could go wrong, can't be more specific.
-        raise IOError('Problem loading this data')
+        raise IOError('Problem loading {}'.format(file_name))
 
 
 def save_file(file_name, data):
