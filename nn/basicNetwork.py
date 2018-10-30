@@ -406,3 +406,29 @@ class SegmentationNetwork(Network):
         vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='{}/{}'.format(scope, var_name))
         reset_op = tf.variables_initializer(vars)
         return metric_op, update_op, reset_op
+
+    @staticmethod
+    def create_resetable_metric_single_iou(scope=tf.get_variable_scope().name, **kwargs):
+        """
+        Create resetable operations for iou metric, this metric will noly calculate iou for class 1
+        :param metric: streaming metric function
+        :param var_name: name of the metric variable
+        :param scope: default to current scope name
+        :param kwargs:
+        :return:
+        """
+        def single_class_metric_fn(predictions=None, labels=None):
+            vars = []
+            tp, update_tp = tf.metrics.true_positives(labels=labels, predictions=predictions, name='tp')
+            vars.append(tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='{}/{}'.format(scope, 'tp'))[0])
+            fn, update_fn = tf.metrics.false_negatives(labels=labels, predictions=predictions, name='fn')
+            vars.append(tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='{}/{}'.format(scope, 'fn'))[0])
+            fp, update_fp = tf.metrics.false_positives(labels=labels, predictions=predictions, name='fp')
+            vars.append(tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='{}/{}'.format(scope, 'fp'))[0])
+
+            return tp/(tp + fn + fp), tf.group(update_tp, update_fn, update_fp), vars
+
+        assert kwargs['num_classes'] == 2
+        metric_op, update_op, vars = single_class_metric_fn(predictions=kwargs['predictions'], labels=kwargs['labels'])
+        reset_op = tf.variables_initializer(vars)
+        return metric_op, update_op, reset_op
