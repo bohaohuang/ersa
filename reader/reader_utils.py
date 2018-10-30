@@ -49,7 +49,21 @@ def image_flipping_vert(img):
     return img
 
 
-def image_scaling_with_label(img, rescale=True):
+def resize_image(img, new_size, preserve_range=False):
+    """
+    Resize the input image, can preserve the original data range if given ground truth
+    :param img: the image to be resized
+    :param new_size: new image size
+    :param preserve_range: keep the original data range or not
+    :return:
+    """
+    if preserve_range:
+        return skimage.transform.resize(img, new_size, order=0, preserve_range=True, mode='reflect')
+    else:
+        return skimage.transform.resize(img, new_size, mode='reflect')
+
+
+def image_scaling_with_label(img):
     """
     Random scale images, assume the last channel is the label
     Resize the rgb part with bilinear interpolation, the label part with nearest neighbor
@@ -63,9 +77,8 @@ def image_scaling_with_label(img, rescale=True):
     h, w = ftr.shape[:2]
     h_new = int(h * scale)
     w_new = int(w * scale)
-    ftr = skimage.transform.resize(ftr, (h_new, w_new), mode='reflect')
-    lbl = np.expand_dims(skimage.transform.resize(lbl, (h_new, w_new), order=0,
-                                                  preserve_range=True, mode='reflect'), axis=-1)
+    ftr = resize_image(ftr, (h_new, w_new))
+    lbl = np.expand_dims(resize_image(lbl, (h_new, w_new), preserve_range=True), axis=-1)
     img = np.dstack([ftr, lbl])
     img = random_pad_crop_image_with_label(img, (h, w))
 
