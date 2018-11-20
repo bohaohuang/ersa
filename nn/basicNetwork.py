@@ -47,7 +47,7 @@ class Network(object):
         self.n_valid = 0
         # mode is used to determine it's training or not
         self.mode = tf.get_variable(name='mode', shape=[], dtype=tf.bool)
-        self.train_op = {True: self.mode.assign(True), False:self.mode.assign(False)}
+        self.train_op = {True: self.mode.assign(True), False: self.mode.assign(False)}
 
     def create_graph(self, **kwargs):
         raise NotImplementedError('Must be implemented by the subclass')
@@ -149,7 +149,7 @@ class Network(object):
             close_sess_flag = True
         if saver is None:
             # create a saver if not given
-            saver = tf.train.Saver(var_list=tf.global_variables())
+            saver = tf.train.Saver(var_list=[i for i in tf.trainable_variables() if 'mode' not in i.name])
         if os.path.exists(model_path) and tf.train.get_checkpoint_state(model_path):
             if epoch is None:
                 # load the latest or best

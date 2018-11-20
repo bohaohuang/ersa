@@ -154,7 +154,12 @@ class UNet(basicNetwork.SegmentationNetwork):
                                                              name='loss_iou')
 
             if loss_type == 'xent':
-                self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=prediction, labels=gt))
+                if 'pos_weight' in kwargs:
+                    self.loss = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(
+                        logits=prediction, labels=gt, pos_weight=kwargs['pos_weight']))
+                else:
+                    self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
+                        logits=prediction, labels=gt))
                 self.loss_xent = self.create_resetable_metric(tf.metrics.mean, var_name='loss_xent',
                                                               scope=tf.get_variable_scope().name,
                                                               values=self.loss, name='loss_xent')

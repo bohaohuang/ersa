@@ -77,7 +77,7 @@ class PatchExtractor(processBlock.BasicProcess):
     """
     Extract patches from images in a densely sliding window
     """
-    def __init__(self, patch_size, tile_size, ds_name, overlap=0, pad=0, name='patch_extractor'):
+    def __init__(self, patch_size, tile_size=None, ds_name='', overlap=0, pad=0, name='patch_extractor'):
         """
         :param patch_size: patch size to be extracted
         :param tile_size: tile size (image size)
@@ -87,7 +87,10 @@ class PatchExtractor(processBlock.BasicProcess):
         :param name: name of the process
         """
         self.patch_size = np.array(patch_size, dtype=np.int32)
-        self.tile_size = np.array(tile_size, dtype=np.int32)
+        if tile_size is not None:
+            self.tile_size = np.array(tile_size, dtype=np.int32)
+        else:
+            self.tile_size = tile_size
         self.overlap = overlap
         self.pad = pad
         pe_name = '{}_h{}w{}_overlap{}_pad{}'.format(name, self.patch_size[0], self.patch_size[1], self.overlap, self.pad)
@@ -103,7 +106,9 @@ class PatchExtractor(processBlock.BasicProcess):
         :return:
         """
         assert len(kwargs['file_exts']) == len(kwargs['file_list'][0])
-        grid_list = make_grid(self.tile_size + 2*self.pad, self.patch_size, self.overlap)
+        grid_list = None
+        if self.tile_size is not None:
+            grid_list = make_grid(self.tile_size + 2*self.pad, self.patch_size, self.overlap)
         pbar = tqdm(kwargs['file_list'])
         record_file = open(os.path.join(self.path, 'file_list.txt'), 'w')
         for files in pbar:
@@ -112,6 +117,8 @@ class PatchExtractor(processBlock.BasicProcess):
             for f, ext in zip(files, kwargs['file_exts']):
                 patch_list_ext = []
                 img = ersa_utils.load_file(f)
+                if self.tile_size is None:
+                    grid_list = make_grid(np.array(img.shape[:2])+2*self.pad, self.patch_size, self.overlap)
                 # extract images
                 for patch, y, x in patch_block(img, self.pad, grid_list, self.patch_size, return_coord=True):
                     patch_name = '{}_y{}x{}.{}'.format(os.path.basename(f).split('.')[0], int(y), int(x), ext)

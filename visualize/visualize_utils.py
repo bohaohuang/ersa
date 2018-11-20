@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 
-def compare_two_figure(img_1, img_2, show_axis=False, fig_size=(12, 6)):
+def compare_two_figure(img_1, img_2, show_axis=False, fig_size=(12, 6), show_fig=True):
     """
     Show two figures in a row, link their axes
     :param img_1: image to show on the left
@@ -20,7 +20,8 @@ def compare_two_figure(img_1, img_2, show_axis=False, fig_size=(12, 6)):
     if not show_axis:
         plt.axis('off')
     plt.tight_layout()
-    plt.show()
+    if show_fig:
+        plt.show()
 
 
 def compare_three_figure(img_1, img_2, img_3, show_axis=False, fig_size=(12, 6)):

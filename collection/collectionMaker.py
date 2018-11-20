@@ -76,7 +76,7 @@ def read_collection(clc_name=None, clc_dir=None, raw_data_path=None, field_name=
         # create collection
         cm = CollectionMaker(meta_data['raw_data_path'], meta_data['field_name'], meta_data['field_id'],
                              meta_data['rgb_ext'], meta_data['gt_ext'], meta_data['file_ext'],
-                             meta_data['files'], meta_data['clc_name'], force_run=False)
+                             meta_data['files'], meta_data['clc_name'], force_run=force_run)
         return cm
     else:
         # try to create the collection
@@ -146,7 +146,7 @@ class CollectionMaker(object):
         :param file_ext: extension of the images
         :return: regex pattern string
         """
-        regexp = r'.*({})[\D]*({})[\D]*{}.*.{}'.format('|'.join(field_name), '|'.join(field_id), field_txt, file_ext)
+        regexp = r'.*({})[\D]*({})[\D]{}.*.{}'.format('|'.join(field_name), '|'.join(field_id), field_txt, file_ext)
         return regexp
 
     def get_dir(self):

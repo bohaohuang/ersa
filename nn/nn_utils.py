@@ -134,9 +134,10 @@ def crop_upsample_concat(input_a, input_b, margin, name):
     :param name: name for this variable scope
     :return:
     """
-    _, w, h, _ = input_b.get_shape().as_list()
-    input_b_crop = tf.image.resize_image_with_crop_or_pad(input_b, w - margin, h - margin)
-    return upsample_concat(input_a, input_b_crop, name)
+    with tf.variable_scope('crop_upsample_concat'):
+        _, w, h, _ = input_b.get_shape().as_list()
+        input_b_crop = tf.image.resize_image_with_crop_or_pad(input_b, w - margin, h - margin)
+        return upsample_concat(input_a, input_b_crop, name)
 
 
 def crop_upsample_conv_concat(input_a, input_b, margin, name, filter_n, training):
