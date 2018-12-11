@@ -58,6 +58,7 @@ class NNEstimatorSegment(processBlock.BasicProcess):
         self.score_results = score_results
         self.split_char = split_char
         self.kwargs = kwargs
+        self.compute_shape_flag = False  # recompute tile shape or not
 
         super().__init__(name, self.score_save_dir, func=self.process)
 
@@ -102,6 +103,13 @@ class NNEstimatorSegment(processBlock.BasicProcess):
                 tile_name = os.path.basename(file_name).split(self.split_char)[0]
             if self.verb:
                 print('Evaluating {} ... '.format(tile_name))
+
+            # read tile size if no tile size is given
+            if self.tile_size is None or self.compute_shape_flag:
+                self.compute_shape_flag = True
+                tile = ersa_utils.load_file(file_name)
+                self.tile_size = tile.shape[:2]
+
             start_time = time.time()
 
             # run the model
@@ -118,6 +126,8 @@ class NNEstimatorSegment(processBlock.BasicProcess):
                                                       patch_size_output=[self.input_size[0] - pad,
                                                                          self.input_size[1] - pad],
                                                       overlap=pad)
+            if self.compute_shape_flag:
+                self.tile_size = None
 
             pred = nn_utils.get_pred_labels(image_pred) * self.truth_val
 

@@ -301,6 +301,8 @@ class DataReaderSegmentationTesting(DataReaderSegmentation):
         for f in file:
             data_block.append(ersa_utils.load_file(f))
         data_block = np.dstack(data_block)
+        if self.tile_size is None:
+            self.tile_size = data_block.shape[:2]
         grid_list = pe.make_grid((self.tile_size[0] + self.pad * 2, self.tile_size[1] + self.pad * 2),
                                  self.input_size, self.overlap)
         for patch in pe.patch_block(data_block, self.pad, grid_list, self.input_size):
